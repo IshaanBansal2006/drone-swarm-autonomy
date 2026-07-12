@@ -45,3 +45,6 @@ outputs/
 
 # Notion / Obsidian sync artifacts
 .obsidian/
+
+# Local AI agent config — private, not part of the public repo
+CLAUDE.md
