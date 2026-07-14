@@ -5,7 +5,7 @@
 
 ## Context
 
-Mini-Lattice needs a simulation environment to host N drones + M sensors before any real-hardware step. The choice constrains sensor realism, iteration speed, industry-tool signal, sim-to-real path viability, and cross-boundary transport (this dev machine is WSL2 Ubuntu 20.04 on top of Windows 11 with an RTX 4070 Laptop, 8GB VRAM, 32GB system RAM).
+Mini-Lattice needs a simulation environment to host N drones + M sensors before any real-hardware step. The choice constrains sensor realism, iteration speed, industry-tool signal, sim-to-real path viability, and cross-boundary transport (this dev machine is WSL2 Ubuntu 22.04 on top of Windows 11 with an RTX 4070 Laptop, 8GB VRAM, 32GB system RAM).
 
 ## Options considered
 
@@ -27,12 +27,12 @@ Mini-Lattice needs a simulation environment to host N drones + M sensors before 
 
 ## Consequences
 
-- **Sim and code live in different environments.** Fast DDS discovery must be configured so Windows-side ROS2 and WSL-side ROS2 see each other on the WSL virtual NIC. Add a Windows firewall exception for the DDS discovery + user-data ports.
+- **Sim and code live in different environments.** WSL2 mirrored networking (`networkingMode=mirrored` in `.wslconfig`) shares the Windows network stack so DDS multicast discovery works without a dedicated discovery server or XML profiles. Firewall exceptions may still be needed if Hyper-V firewall blocks DDS ports.
 - **L1 / L2 / L3 code is ROS2-native.** Message layer between sim and L1 is ROS2 messages.
 - **Decision `031` (data transport) is partially resolved.** ROS2 covers the sim-boundary + L1/L2 comms. The browser-facing COP frontend still needs its own transport decision (WebSocket, Foxglove, Rerun).
 - **Decision `040` (interface schemas) is now scoped to ROS2 `.msg` / IDL types** (or pydantic models that serialize to ROS2 messages).
 - **Real-hardware stretch (`006`, D6) becomes cheap.** Replace Isaac Sim publishers with real sensor/state drivers on the same ROS2 topics; L1/L2/L3 code is unchanged. Isaac-to-real is now a driver swap, not a rewrite.
-- **Ties into existing `~/px4_ros2_ws/`** (ROS2 Foxy + `px4_ros_com` + uXRCE-DDS). Reuse this workspace.
+- **`~/px4_ros2_ws/` (Foxy) did not survive the 20.04→22.04 migration.** If PX4 integration is needed later, rebuild on Humble from scratch.
 - **VRAM ceiling acknowledged.** RTX 4070 Laptop 8GB VRAM is the minimum for Isaac Sim. Cap scene complexity at 2–3 drones + 2–4 sensors initially. If we hit VRAM ceilings, simplify materials/scene assets before considering cloud GPU (Lambda, RunPod, Nvidia LaunchPad).
 - **D5 (intent-parser tech) is now constrained.** A local LLM on the same GPU as Isaac Sim will not fit alongside a moderate scene. This pushes D5 toward: API-based LLM (Claude/GPT), a CPU-quantized local model (ollama on CPU or `llama.cpp` w/ `-ngl 0`), or a DSL.
 - **Learning-curve budget.** 2–3 weeks for Isaac Sim + ROS2 bridge setup before productive layer work. Bake into `002` (roadmap slot / timing).
@@ -40,11 +40,18 @@ Mini-Lattice needs a simulation environment to host N drones + M sensors before 
 
 ## Setup checklist (execution notes; not part of the decision)
 
-- [ ] Install Nvidia Omniverse Launcher on Windows
-- [ ] Install Isaac Sim via Omniverse (latest stable)
-- [ ] Enable Isaac Sim ROS2 Bridge extension (matches ROS2 Foxy on WSL)
-- [ ] Configure Fast DDS profile (XML) on both sides so discovery works across the WSL vEthernet NIC
-- [ ] Add Windows firewall exception for DDS discovery + user data ports (7400 base + offsets)
-- [ ] Verify: WSL `ros2 topic list` sees a topic published by Isaac Sim on Windows
+- [x] Install Isaac Sim 4.x standalone on Windows (Omniverse Launcher deprecated ~late 2025)
+- [x] Enable `isaacsim.ros2.bridge` extension (Humble — matches WSL ROS2 Humble)
+- [x] Configure WSL2 mirrored networking (`.wslconfig` → `networkingMode=mirrored`)
+- [x] Verify: WSL `ros2 topic list` sees ROS2 node topics from Isaac Sim on Windows
 - [ ] Verify: WSL publishes a topic that Isaac Sim receives (cmd_vel or similar)
 - [ ] Optional: install `ros1_bridge` if kanan / ArduPilot integration ever becomes relevant (later)
+
+## Amendment — 2026-07-13
+
+Migrated WSL from Ubuntu 20.04 to 22.04. Key changes from the original decision:
+
+- **ROS2 distro is now Humble, not Foxy.** Isaac Sim 4.x bundles Humble internally, so both sides match.
+- **Cross-boundary networking uses WSL2 mirrored mode**, not Fast DDS discovery server XML. Windows build 26200 (24H2) + WSL 2.7.10 support mirrored networking natively. This eliminated the need for DDS XML profiles and firewall port exceptions for discovery.
+- **Isaac Sim installed as standalone zip** (`C:\IsaacSim`), not via Omniverse Launcher (deprecated).
+- **`~/px4_ros2_ws/` is gone.** Fresh Humble rebuild required if PX4 integration is pursued later.
