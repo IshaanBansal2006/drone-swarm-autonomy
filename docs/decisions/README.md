@@ -36,6 +36,7 @@ What now flows from this — what's easier, what's harder, what's ruled out.
 | 004 | Category structure | Pending |
 | 005 | Intent-parser tech | Pending (constrained by 001 — see doc) |
 | 006 | Real hardware stretch | Pending (cheap given 001) |
+| 007 | Sensor modalities | Accepted (radar + EO/IR + lidar, phased, mixed topology, heterogeneous loadouts) |
 | 010 | State estimator | Ready to decide after reading |
 | 011 | Data association | Ready to decide after reading |
 | 012 | Classification fusion | Ready to decide after reading |

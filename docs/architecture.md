@@ -18,9 +18,8 @@ The authoritative design lives in the [Notion project page](https://app.notion.c
 ## Runtime topology (per decision 001)
 
 - **Sim:** Isaac Sim on Windows 11 host
-- **Code:** L1 / L2 / L3 / L4 in WSL2 Ubuntu 20.04
-- **Sim ↔ Code bus:** ROS2 (Foxy) across the WSL vEthernet NIC, via Fast DDS discovery
-- **Existing workspace:** reuse `~/px4_ros2_ws/` (Foxy + `px4_ros_com` + uXRCE-DDS)
+- **Code:** L1 / L2 / L3 / L4 in WSL2 Ubuntu 22.04
+- **Sim ↔ Code bus:** ROS2 (Humble) across WSL2 mirrored networking (`networkingMode=mirrored`)
 - **Sim-to-real path:** swap Isaac Sim publishers for real sensor/state drivers on the same ROS2 topics; L1/L2/L3 unchanged
 
 ## Cross-layer message schemas
