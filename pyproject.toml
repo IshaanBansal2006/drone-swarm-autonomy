@@ -8,8 +8,8 @@ authors = [{ name = "Ishaan Bansal" }]
 license = { text = "MIT" }
 
 dependencies = [
-    # Fill in as decisions get made. Kept intentionally empty so nothing
-    # ships that presumes a sim/algorithm choice (see docs/decisions/).
+    "numpy>=1.26",
+    "pydantic>=2.0",
 ]
 
 [project.optional-dependencies]
