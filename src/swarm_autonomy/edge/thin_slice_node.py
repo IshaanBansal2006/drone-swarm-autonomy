@@ -9,11 +9,11 @@ D-B7). The node's remaining harness role is measurement synthesis:
         -> camera [u,v,w,h] + radar [range,az,el,doppler] via the REAL h() + noise
         -> Detection messages (with harness class labels for the cube)
         -> MultiTargetTracker.step()
-        -> printed confirmed tracks + interim /tracks JSON topic
+        -> printed confirmed tracks + /tracks TrackFrame
 
-/tracks is std_msgs/String carrying JSON — an INTERIM transport pending the 040
-schema decision (custom .msg/IDL needs a colcon package; JSON keeps the L1->L2
-seam observable today and swaps out cleanly once 040 is approved).
+/tracks carries a 040 `TrackFrame` as JSON in std_msgs/String. The String is
+still an interim TRANSPORT (a custom .msg/IDL needs a colcon package), but the
+CONTENT is now the validated schema — the hand-adapted short keys are gone.
 
 Run (WSL, Isaac scene running):
     source scripts/ros-env.sh
@@ -23,7 +23,6 @@ Run (WSL, Isaac scene running):
 from __future__ import annotations
 
 import argparse
-import json
 import time
 
 import numpy as np
@@ -34,9 +33,11 @@ from std_msgs.msg import String
 
 from swarm_autonomy.edge.classification import DSClassifier
 from swarm_autonomy.edge.config import TrackerConfig
+from swarm_autonomy.edge.filters import sqrt_cov_block
 from swarm_autonomy.edge.observation import CameraModel, h_camera, h_radar
 from swarm_autonomy.edge.tracker import MultiTargetTracker
 from swarm_autonomy.edge.types import Detection
+from swarm_autonomy.schemas import TrackFrame, TrackMsg, encode_mass
 
 TRUE_EXTENT = np.array([0.2, 0.2, 0.2])
 CAM_OFFSET = np.array([-6.0, -2.0, 3.0])
@@ -121,22 +122,30 @@ class ThinSliceTracker(Node):
             )
 
     def _publish(self, confirmed, t: float) -> None:
-        """Interim /tracks JSON feed (schema pending decision 040)."""
-        payload = {"t": t, "tracks": []}
+        """Publish the complete confirmed picture as a 040 TrackFrame."""
+        msgs = []
         for tr in confirmed:
             e = tr.state.x
             label, conf = (self.classifier.decide(tr.class_beliefs)
                            if tr.class_beliefs else (None, 0.0))
-            payload["tracks"].append({
-                "id": tr.track_id, "age": tr.age,
-                "position": [round(float(v), 3) for v in e[0:3]],
-                "velocity": [round(float(v), 3) for v in e[3:6]],
-                "extent": [round(float(v), 3) for v in e[6:9]],
-                "class": label, "confidence": round(conf, 3),
-            })
-        msg = String()
-        msg.data = json.dumps(payload)
-        self.tracks_pub.publish(msg)
+            msgs.append(TrackMsg(
+                track_id=tr.track_id,
+                timestamp=t,
+                position=[float(v) for v in e[0:3]],
+                velocity=[float(v) for v in e[3:6]],
+                extent=[float(v) for v in e[6:9]],
+                # row-major 3x3; L @ L.T is the marginal position covariance
+                position_sqrt_cov=[float(v) for v in sqrt_cov_block(tr.state).ravel()],
+                class_label=label,
+                class_confidence=float(conf),
+                # DS-native mass rides downstream (D-B7) so L3 can show Bel/Pl,
+                # not just the flattened label
+                class_beliefs=encode_mass(tr.class_beliefs) if tr.class_beliefs else {},
+                age=tr.age,
+                source_sensor_ids=list(tr.source_sensor_ids),
+            ))
+        frame = TrackFrame(timestamp=t, tracks=msgs)
+        self.tracks_pub.publish(String(data=frame.model_dump_json()))
 
 
 def main() -> None:

@@ -9,6 +9,8 @@ differs (P vs its Cholesky factor), which `initial_state` hides.
 
 from __future__ import annotations
 
+import logging
+
 import numpy as np
 from numpy.typing import NDArray
 
@@ -34,3 +36,33 @@ def initial_state(
     if isinstance(filt, SquareRootUKF):
         return SRTrackState(x=x0, S=np.linalg.cholesky(P0))
     return TrackState(x=x0, P=P0)
+
+
+def sqrt_cov_block(state: TrackState | SRTrackState, dim: int = 3) -> NDArray[np.float64]:
+    """Lower-triangular Cholesky factor of the LEADING dim x dim block of P.
+
+    The wire format for uncertainty (040 amendment): a factor cannot be
+    round-tripped into a non-PSD matrix, unlike a covariance.
+
+    Free for the SR-UKF: because S is lower-triangular, S[:d, d:] is structurally
+    zero, so P[:d, :d] = S[:d, :d] @ S[:d, :d].T exactly — the leading block of
+    the factor IS the factor of the leading block. No re-factorisation, and
+    widening `dim` later costs nothing. This holds ONLY for leading principal
+    blocks; the trailing extent block has no such shortcut.
+    """
+    if isinstance(state, SRTrackState):
+        return np.asarray(state.S[:dim, :dim], dtype=float)
+    P = np.asarray(state.P, dtype=float)[:dim, :dim]
+    try:
+        return np.linalg.cholesky(P)
+    except np.linalg.LinAlgError:
+        # Standard-form UKF only: P can go indefinite (the failure mode the
+        # SR-UKF exists to prevent). Floor the spectrum rather than publish
+        # nothing, and make the repair visible instead of silent.
+        w, V = np.linalg.eigh(0.5 * (P + P.T))
+        repaired = V @ np.diag(np.maximum(w, 1e-12)) @ V.T
+        logging.getLogger(__name__).warning(
+            "position covariance was not PSD (min eigenvalue %.3e); published a "
+            "spectrum-floored factor. Switch covariance_form to 'srukf' to make "
+            "this structurally impossible.", float(w.min()))
+        return np.linalg.cholesky(repaired)

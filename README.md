@@ -90,7 +90,7 @@ The history is organised so you can check out any stage of the project and run i
 git checkout video-0-bridge       # simulator ↔ ROS 2 bridge only
 git checkout video-1-perception   # + the estimation stack
 git checkout video-2-autonomy     # + planning, allocation, drones flying
-git checkout video-3-lattice      # + operating picture and approval gate
+git checkout video-3-full-stack   # + operating picture and approval gate
 ```
 
 Each tag is self-contained and its test suite passes standalone.

@@ -21,6 +21,8 @@ import rerun as rr
 from rclpy.node import Node
 from std_msgs.msg import String
 
+from swarm_autonomy.schemas import TrackFrame
+
 
 def _set_time(t: float) -> None:
     """Rerun >=0.23 renamed set_time_seconds -> set_time(duration=...)."""
@@ -37,19 +39,21 @@ class RerunBridge(Node):
         self.get_logger().info("COP bridge up — logging to Rerun")
 
     def _on_tracks(self, msg: String) -> None:
-        payload = json.loads(msg.data)
-        self._t = payload.get("t", self._t)
+        frame = TrackFrame.model_validate_json(msg.data)
+        # The envelope timestamp advances the scrubber even on an EMPTY frame —
+        # "L1 is alive and confirms nothing" is a state the operator must see.
+        self._t = frame.timestamp
         _set_time(self._t)
-        for tr in payload.get("tracks", []):
-            path = f"world/tracks/{tr['id']}"
+        for tr in frame.tracks:
+            path = f"world/tracks/{tr.track_id}"
             rr.log(path, rr.Boxes3D(
-                centers=[tr["position"]],
-                half_sizes=[[max(e, 0.05) / 2 for e in tr["extent"]]],
-                labels=[f"#{tr['id']} {tr.get('class') or '?'}"
-                        f"({tr.get('confidence', 0):.2f})"],
+                centers=[tr.position],
+                half_sizes=[[max(e, 0.05) / 2 for e in tr.extent]],
+                labels=[f"#{tr.track_id} {tr.class_label or '?'}"
+                        f"({tr.class_confidence:.2f})"],
                 colors=[[255, 80, 80]]))
             rr.log(path + "/vel", rr.Arrows3D(
-                origins=[tr["position"]], vectors=[tr["velocity"]],
+                origins=[tr.position], vectors=[tr.velocity],
                 colors=[[255, 160, 80]]))
 
     def _on_drones(self, msg: String) -> None:

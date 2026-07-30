@@ -9,6 +9,9 @@ proposals, L3/L4 read everything.
 DS mass functions (dict[frozenset[str], float]) are JSON-unfriendly; they cross
 the wire with each focal set encoded as a sorted "|"-joined string
 ("person|vehicle"). encode_mass/decode_mass are the only codec for that.
+
+Uncertainty crosses the wire as a Cholesky FACTOR, not a covariance (040
+amendment, 2026-07-30). See TrackMsg.position_sqrt_cov.
 """
 
 from __future__ import annotations
@@ -36,12 +39,34 @@ class TrackMsg(BaseModel):
     position: list[float]  # [x, y, z] m, world frame
     velocity: list[float]  # [vx, vy, vz] m/s
     extent: list[float]  # [Lx, Ly, Lz] m (see D-B11 caveats on accuracy)
-    position_cov: list[float]  # 3x3 row-major (marginal position covariance)
+    # Lower-triangular Cholesky FACTOR L of the marginal position covariance,
+    # 3x3 row-major (the three above-diagonal zeros are structural). Recover the
+    # covariance as P_pos = L @ L.T. Shipping the factor rather than P is the
+    # 040 amendment: a factor cannot round-trip into a non-PSD matrix, and
+    # because L is triangular its leading 3x3 block IS the exact factor of the
+    # leading 3x3 block of P — so widening this later to 6x6 (position+velocity)
+    # or 9x9 is a pure slice change with no re-derivation.
+    position_sqrt_cov: list[float]
     class_label: str | None = None  # pignistic decision (decision 015)
     class_confidence: float = 0.0  # BetP of the label
     class_beliefs: dict[str, float] = Field(default_factory=dict)  # encode_mass form
     age: int = 0
     source_sensor_ids: list[str] = Field(default_factory=list)
+
+
+class TrackFrame(BaseModel):
+    """L1 -> L2/L3: ONE COMPLETE confirmed-track picture at one instant.
+
+    The envelope exists so the empty case stays expressive: "L1 is alive and
+    currently confirms nothing" is a real, actionable message, and a bare list
+    of TrackMsg cannot carry a timestamp when the list is empty. Consumers
+    replace their whole picture per frame (snapshot semantics), which is what
+    makes track DELETION observable without explicit death messages — the
+    deleted track simply isn't in the next frame.
+    """
+
+    timestamp: float  # sim seconds — authoritative for the frame
+    tracks: list[TrackMsg] = Field(default_factory=list)
 
 
 class StructuredIntent(BaseModel):

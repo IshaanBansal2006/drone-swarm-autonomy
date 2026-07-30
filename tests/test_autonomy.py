@@ -19,7 +19,7 @@ def make_world(n_drones: int = 2) -> WorldState:
                                   capabilities=frozenset({"camera", "radar"})))
     w.update_tracks([TrackMsg(track_id=7, timestamp=1.0, position=[3, 4, 0.5],
                               velocity=[0.5, 0.2, 0], extent=[0.2] * 3,
-                              position_cov=[0.0] * 9)], timestamp=1.0)
+                              position_sqrt_cov=[0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1])], timestamp=1.0)
     return w
 
 

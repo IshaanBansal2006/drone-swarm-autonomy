@@ -56,7 +56,7 @@ def test_follow_track_chases_and_fails_on_loss() -> None:
     w = make_world()
     w.update_tracks([TrackMsg(track_id=3, timestamp=0.0, position=[5, 5, 0.5],
                               velocity=[0, 0, 0], extent=[0.2] * 3,
-                              position_cov=[0.0] * 9)], 0.0)
+                              position_sqrt_cov=[0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1])], 0.0)
     task = Task(task_id="f", intent_id="i", task_type="follow_track",
                 target_track_id=3, required_capability="camera")
     ex = Executor(KinematicBackend(w), w)
