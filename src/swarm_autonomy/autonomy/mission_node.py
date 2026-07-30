@@ -42,7 +42,7 @@ from swarm_autonomy.autonomy.coverage import VoronoiCoverage
 from swarm_autonomy.autonomy.decomposer import HTNDecomposer, Task
 from swarm_autonomy.autonomy.executor import Executor, KinematicBackend
 from swarm_autonomy.autonomy.world_state import DroneState, WorldState
-from swarm_autonomy.schemas import EngagementProposal, StructuredIntent, TrackMsg
+from swarm_autonomy.schemas import EngagementProposal, StructuredIntent, TrackFrame
 
 TICK_DT = 0.1  # control cycle (s)
 ENGAGE_RANGE = 3.0  # m — follower proximity that triggers a proposal
@@ -89,18 +89,10 @@ class MissionNode(Node):
         self._replan(f"new intent {intent.intent_id}")
 
     def _on_tracks(self, msg: String) -> None:
-        payload = json.loads(msg.data)
-        # adapter: interim /tracks JSON (L1 node) -> 040 TrackMsg. The wire uses
-        # short keys ("id", "class"); the schema uses full names.
-        tracks = [TrackMsg(track_id=t["id"], timestamp=payload["t"],
-                           position=t["position"], velocity=t["velocity"],
-                           extent=t["extent"],
-                           position_cov=t.get("position_cov", [0.0] * 9),
-                           class_label=t.get("class"),
-                           class_confidence=t.get("confidence", 0.0),
-                           age=t.get("age", 0))
-                  for t in payload.get("tracks", [])]
-        self.world.update_tracks(tracks, payload.get("t", 0.0))
+        # Validated 040 TrackFrame — no hand-adapted keys. A producer/consumer
+        # field mismatch now fails HERE, loudly, at the boundary.
+        frame = TrackFrame.model_validate_json(msg.data)
+        self.world.update_tracks(frame.tracks, frame.timestamp)
 
     def _on_decision(self, msg: String) -> None:
         d = json.loads(msg.data)

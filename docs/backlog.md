@@ -46,10 +46,14 @@ _Last updated: 2026-07-29 (post thin-slice completion)._
     sigma-point regression lock) is the only UKF suite. `tests/edge/` package removed with it.
   - ~~`scripts/discovery-server.sh` vestigial~~ — **already deleted**; the dead end survives where
     it belongs, as documentation (bridge doc Issue 9), not as runnable code.
-  - Interim `/tracks` JSON should become a real `TrackMsg` publish (finish `040` adoption);
-    `mission_node._on_tracks` currently hand-adapts short keys (`id`→`track_id`, `class`→
-    `class_label`) and defaults `position_cov` to zeros. **Two open sub-decisions before this can
-    land: the frame envelope shape, and where `position_cov` comes from.**
+  - ~~Interim `/tracks` JSON should become a real `TrackMsg` publish~~ — **DONE 2026-07-30**
+    (`040` amendment). `TrackFrame` envelope chosen over a bare list (an empty list has no
+    timestamp, and "alive, confirming nothing" must stay expressible); `position_cov` →
+    `position_sqrt_cov`, the Cholesky **factor** of the leading 3×3 block, chosen over the full
+    9×9 covariance. Short-key adapter deleted — mismatches now fail at the boundary. Transport is
+    still JSON-in-`String`; only the content was promoted.
+  - **Still open:** custom `.msg`/IDL type for `/tracks` (needs a colcon package). Widening
+    `position_sqrt_cov` to 6×6 is a pure slice whenever L2 needs cross-covariance.
 - ~~Thin-slice node runs its own fusion loop~~ — **PORTED 2026-07-30** onto
   `MultiTargetTracker` (683 live cycles: birth→confirm→track, class=vehicle(1.00), err
   ~0.1–0.3 m; interim JSON `/tracks` topic pending 040). Scene truth feed moved from the

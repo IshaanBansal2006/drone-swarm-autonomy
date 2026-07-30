@@ -1305,7 +1305,8 @@ implementation elegance."*
 
 | Message | Direction | Notable content |
 |---|---|---|
-| `TrackMsg` | L1 → L2/L3 | position, velocity, extent, `position_cov`, class + **DS-native `class_beliefs`** |
+| `TrackFrame` | L1 → L2/L3 | envelope: `timestamp` + the complete confirmed `tracks` list (snapshot semantics) |
+| `TrackMsg` | L1 → L2/L3 | position, velocity, extent, `position_sqrt_cov` (Cholesky **factor**), class + **DS-native `class_beliefs`** |
 | `StructuredIntent` | operator → L2 | verb, target (track/polygon/point), priority, deadline |
 | `TaskAssignment` | L2 → drones | task, drone, waypoints, **`intent_id` provenance** |
 | `EngagementProposal` | L2 → L4 | action, target, rationale, `deadline_s` |
