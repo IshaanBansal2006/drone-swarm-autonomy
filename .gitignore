@@ -48,3 +48,9 @@ outputs/
 
 # Local AI agent config — private, not part of the public repo
 CLAUDE.md
+
+# Personal study aids — line-by-line explanations, not shipped
+explanations/
+
+# Runtime artifacts
+l4_audit.jsonl

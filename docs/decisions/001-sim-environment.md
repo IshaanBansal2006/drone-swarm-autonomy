@@ -38,7 +38,31 @@ Mini-Lattice needs a simulation environment to host N drones + M sensors before 
 - **Learning-curve budget.** 2–3 weeks for Isaac Sim + ROS2 bridge setup before productive layer work. Bake into `002` (roadmap slot / timing).
 - **Windows RAM headroom is tight.** 32GB total; Isaac Sim + Windows baseline + WSL cap will use most of it. Close Chrome/JetBrains before long runs.
 
-## Setup checklist (execution notes; not part of the decision)
+## Amendment (2026-07-29) — post-migration and post-bridge reality
+
+The decision (Isaac on Windows + ROS 2 across the WSL boundary, W1) **stands and is now
+verified working end-to-end.** Several execution details changed between writing and reality:
+
+- **Foxy → Humble.** The dev machine migrated Ubuntu 20.04 → 22.04; all Foxy references below
+  are obsolete. WSL runs ROS 2 **Humble**; Isaac Sim 6.0.1's bridge runs its internal
+  **jazzy** distro — they interoperate (RTPS is the wire protocol, both Fast DDS).
+- **`~/px4_ros2_ws/` did not survive the migration.** The "reuse this workspace" consequence
+  is void; PX4 integration (if ever) is a fresh Humble build.
+- **Omniverse Launcher is deprecated.** Isaac Sim 6.0.1 is a standalone install at
+  `C:\IsaacSim`; the checklist's Launcher items are obsolete.
+- **Networking is WSL mirrored mode** (`networkingMode=mirrored`), not NAT. This made the
+  boundary *harder* for DDS, not easier: multicast doesn't cross, and the shared IP breaks
+  Fast DDS's same-host detection (shared-memory transport + own-IP locators black-hole data).
+- **The anticipated "Fast DDS profile (XML)" checklist item turned out to be the entire
+  solution**, in a different form than expected: a loopback-whitelist UDP-only profile with
+  initial peers (`config/fastdds-loopback.xml`, identical on both sides). No discovery
+  server, no multicast. A discovery-server approach was tried first and retired.
+- **The firewall exception needed is the *Hyper-V* VM firewall** (`New-NetFirewallHyperVRule`,
+  UDP 7400-7700 inbound), not the classic Windows Firewall the checklist implied.
+- **Verified:** custom scene → `/clock` + `/tf` → WSL → 9-D UKF fusion, 2026-07-29. Full
+  debugging record: `docs/isaac-wsl-ros2-bridge.md`.
+
+## Setup checklist (execution notes; not part of the decision — see Amendment above)
 
 - [x] Install Isaac Sim 4.x standalone on Windows (Omniverse Launcher deprecated ~late 2025)
 - [x] Enable `isaacsim.ros2.bridge` extension (Humble — matches WSL ROS2 Humble)
