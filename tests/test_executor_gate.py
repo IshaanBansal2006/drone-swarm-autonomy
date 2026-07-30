@@ -1,0 +1,90 @@
+"""Step-1/2 execution + safety tests: BT leaves on the KinematicBackend
+(mission-in-miniature, no ROS) and the L4 gate's fail-safe state machine."""
+
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from mini_lattice.autonomy.allocator import CBBAAllocator
+from mini_lattice.autonomy.bt import Status
+from mini_lattice.autonomy.decomposer import HTNDecomposer, Task
+from mini_lattice.autonomy.executor import ARRIVE_TOL, Executor, KinematicBackend
+from mini_lattice.autonomy.world_state import DroneState, WorldState
+from mini_lattice.hol.gate import ApprovalGate
+from mini_lattice.schemas import EngagementProposal, StructuredIntent, TrackMsg
+
+
+def make_world() -> WorldState:
+    w = WorldState()
+    w.update_drone(DroneState(drone_id="d0", position=[0.0, 0.0, 2.0],
+                              capabilities=frozenset({"camera"})))
+    w.update_drone(DroneState(drone_id="d1", position=[10.0, 0.0, 2.0],
+                              capabilities=frozenset({"camera"})))
+    return w
+
+
+def run_until_idle(ex: Executor, max_ticks: int = 2000) -> int:
+    for i in range(max_ticks):
+        ex.tick(0.1)
+        if ex.idle():
+            return i
+    pytest.fail("executor never went idle")
+
+
+def test_mission_in_miniature_patrol() -> None:
+    """intent -> HTN -> CBBA -> BT execution -> drones physically fly the legs."""
+    w = make_world()
+    tasks = HTNDecomposer().decompose(
+        StructuredIntent(intent_id="p", verb="patrol",
+                         area=[[0, 0], [8, 0], [8, 8], [0, 8]]), w)
+    alloc = CBBAAllocator().allocate(tasks, list(w.drones.values()))
+    ex = Executor(KinematicBackend(w), w)
+    ex.assign(alloc)
+    run_until_idle(ex)
+    assert sorted(ex.completed) == sorted(t.task_id for t in tasks)
+    assert not ex.failed
+    # each drone physically ended at ITS final leg waypoint
+    for drone_id, path in alloc.items():
+        if path:
+            final = np.asarray(path[-1].waypoints[-1])
+            assert np.linalg.norm(
+                np.asarray(w.drones[drone_id].position) - final) < ARRIVE_TOL + 1e-6
+
+
+def test_follow_track_chases_and_fails_on_loss() -> None:
+    w = make_world()
+    w.update_tracks([TrackMsg(track_id=3, timestamp=0.0, position=[5, 5, 0.5],
+                              velocity=[0, 0, 0], extent=[0.2] * 3,
+                              position_cov=[0.0] * 9)], 0.0)
+    task = Task(task_id="f", intent_id="i", task_type="follow_track",
+                target_track_id=3, required_capability="camera")
+    ex = Executor(KinematicBackend(w), w)
+    ex.assign({"d0": [task]})
+    for _ in range(200):
+        ex.tick(0.1)
+    # chasing: drone closed in on the (static) target's standoff point
+    d = np.linalg.norm(np.asarray(w.drones["d0"].position) - np.asarray([5, 5, 2.5]))
+    assert d < 0.5
+    assert ex.tick(0.1)["d0"] == Status.RUNNING  # following never self-completes
+    w.update_tracks([], 1.0)  # track lost
+    ex.tick(0.1)
+    assert ex.failed == ["f"]  # surfaces as the replan trigger
+
+
+def test_gate_approve_deny_and_timeout_fail_safe() -> None:
+    gate = ApprovalGate()
+    p1 = EngagementProposal(proposal_id="p1", action="designate", rationale="t", deadline_s=10)
+    p2 = EngagementProposal(proposal_id="p2", action="designate", rationale="t", deadline_s=5)
+    gate.submit(p1, now=0.0)
+    gate.submit(p2, now=0.0)
+
+    assert gate.decide("p1", approve=True, operator="ishaan", now=1.0) is True
+    with pytest.raises(KeyError, match="p1"):  # no double-deciding
+        gate.decide("p1", approve=False, operator="ishaan", now=1.1)
+
+    assert gate.tick(now=4.0) == []  # p2 not yet expired
+    assert gate.tick(now=5.0) == ["p2"]  # silence never authorizes: auto-DENY
+    events = [(e["event"], e["proposal_id"]) for e in gate.audit]
+    assert events == [("proposed", "p1"), ("proposed", "p2"),
+                      ("approved", "p1"), ("auto_denied_timeout", "p2")]
