@@ -133,10 +133,34 @@ docs/             decisions, engineering write-ups, the full deep dive
 
 ---
 
+## Where this is going
+
+The classical stack is the foundation, not the destination. The whole architecture is built
+around a single swappable interface for the decision-making layer — and the plan is to replace
+what sits behind it, in stages:
+
+1. **Language input** — speech → natural-language intent → the same structured goals the system
+   already executes today.
+2. **Learned control** — a reinforcement-learning policy trained on the same tasks and measured
+   by the same metrics as the classical planner.
+3. **Vision-language-action** — a model that takes what the drones see *and* what the operator
+   says, and produces swarm behaviour end to end, fine-tuned on demonstrations generated in
+   simulation.
+
+Every stage plugs into the same interface, runs the same missions, and is scored the same way.
+That constraint is the reason the message schemas were frozen before a single layer was
+written — without it, none of these approaches could be honestly compared.
+
+Most work on vision-language-action models targets a single robot doing manipulation. Pointing
+one at a *swarm*, inside a structured command-and-control system with a human holding veto, is
+a different and largely unexplored problem — and that's the part this project is built to
+reach.
+
 ## Status
 
-Actively developed. The classical autonomy stack is complete; work continues on richer
-scenarios, evaluation metrics, and natural-language command input. Open items are tracked in
+Actively developed. Steps 0–2 are complete and running: perception, mission autonomy, the
+operator picture and the approval gate. Current work is richer multi-target scenarios,
+evaluation metrics, and the language front-end. Open items are tracked in
 [`docs/backlog.md`](docs/backlog.md).
 
 Built by [Ishaan Bansal](https://github.com/IshaanBansal2006).

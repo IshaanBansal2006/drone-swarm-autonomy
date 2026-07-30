@@ -5,8 +5,9 @@
 
 ## Vision
 
-Build a **complete multi-agent command-and-control stack for drone swarms**, from sensor
-fusion through mission autonomy to an operator interface with human-on-the-loop safety. An
+Build a **complete multi-agent command-and-control stack for drone swarms** — from sensor
+fusion through mission autonomy to an operator interface with human-on-the-loop safety — and
+then replace its hand-written decision layer with a **learned, language-conditioned one**. An
 operator issues high-level intent — *"go into that room, scan it, and track what's inside"* —
 and the swarm perceives, plans, allocates and executes autonomously.
 
@@ -25,7 +26,7 @@ The system has 4 layers (L1–L4); the build has 6 steps (0–5). They do **not*
 | **2** | L3 + L4 | COP + safety gate | full stack (classical brain), demo-ready |
 | **3** | front of L2 | Language front-end | speech → transcription → structured goals |
 | **4** | L2 brain | Learned control policy | a learned baseline on the same tasks/metrics |
-| **5** | L2 brain | Learned autonomy layer | end-to-end learned mission control |
+| **5** | L2 brain | Vision-language-action layer | language-conditioned swarm control, learned end to end |
 
 ### Step detail
 
@@ -40,8 +41,10 @@ The system has 4 layers (L1–L4); the build has 6 steps (0–5). They do **not*
   understands. This becomes the **symbolic baseline** for later learned approaches.
 - **Step 4 — Learned control policy.** A learned baseline trained on the same tasks and
   metrics. Isolates "is learning worth it" and provides a head-to-head comparison point.
-- **Step 5 — Learned autonomy layer.** End-to-end learned mission control running inside the
-  same architecture, trained on simulator-generated demonstrations.
+- **Step 5 — Vision-language-action layer.** A model taking what the drones see plus what the
+  operator says, and producing swarm behaviour end to end, running inside the same
+  architecture and trained on demonstrations generated in simulation. Built on an open
+  pretrained model (OpenVLA, SmolVLA and openpi are the realistic starting points).
 
 ## Why the later steps are kept separate
 
@@ -49,10 +52,10 @@ Three **interchangeable "brains"** behind one interface enable clean ablation:
 
 - **classical** (Step 1/3) — no learning
 - **learned control** (Step 4) — learned policy trained from scratch on these tasks
-- **learned autonomy** (Step 5) — learned control with pretrained grounding
+- **vision-language-action** (Step 5) — learned control with pretrained visual and language grounding
 
 Deltas attribute value: **classical → learned** measures the value of learning at all;
-**Step 4 → Step 5** measures what pretraining buys. Valid only if all three share the **same
+**Step 4 → Step 5** measures what pretrained grounding buys. Valid only if all three share the **same
 tasks, metrics, and action interface**.
 
 Later choice (defer): task-specific specialists (a performance ceiling) vs. a single

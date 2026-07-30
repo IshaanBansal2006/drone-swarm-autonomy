@@ -52,17 +52,16 @@ It is modeled on **Anduril's Lattice OS** — hence the name — and organized i
 
 Two reasons, and they pull in the same direction:
 
-1. **Portfolio/interview weapon.** It targets defense-autonomy and hybrid product-research
-   roles (Anduril, Shield AI, Skydio, Nvidia GEAR). Two layers go deep enough to defend on a
-   whiteboard: perception (L1) and multi-agent planning (L2).
-2. **A research vehicle.** The end goal (decision `008`) is a **paper on implementing a
-   learned policy in a Lattice structure on swarm drones.**
+1. **A system worth defending in depth.** Two layers go deep enough to reason about from
+   first principles: perception (L1) and multi-agent planning (L2).
+2. **A platform for learned autonomy.** The end goal (decision `008`) is to replace the
+   hand-written decision layer with a **vision-language-action model commanding the swarm.**
 
 ## 0.3 The staged plan (decision `008`)
 
 Six steps. Each is a self-contained sub-project that **runs and demos on its own** *and* is a
-prerequisite for the next. This is the anti-monster discipline: you are never 40% into a paper
-with nothing to show.
+prerequisite for the next. This is the anti-scope-creep discipline: you are never deep into a
+long build with nothing to show.
 
 | Step | Builds | Deliverable | Status |
 |---|---|---|---|
@@ -71,7 +70,7 @@ with nothing to show.
 | **2** | L3+L4 | full mini-Lattice, demo-ready | ✅ **done + live** |
 | **3** | front of L2 | speech → Whisper → LLM → structured goals | next |
 | **4** | L2 brain | custom RL swarm policy (learned baseline) | planned |
-| **5** | L2 brain | **learned autonomy layer** → learned autonomy | the goal |
+| **5** | L2 brain | **vision-language-action layer** | the goal |
 
 ### The baseline ladder (why 3, 4, 5 are separate)
 
@@ -88,8 +87,8 @@ brains** behind one interface:
 ```
 
 - **classical → RL** answers: *is learning worth it at all?*
-- **RL → learned layer** answers: *is an expensive pretrained model worth it, or does
-  cheap task-specific RL match it?* ← **this is the central comparison**
+- **RL → vision-language-action** answers: *what does pretrained visual and language grounding
+  actually buy?*
 
 The comparison is only valid if all three share the **same tasks, same metrics, same action
 interface**. That constraint is why the interfaces (decision `040`) were locked before any
@@ -1330,7 +1329,7 @@ datasets will eventually depend on it.
 | **000** | Scope & layer depth | **L1–L3 deep-ish, L4 light** | two interview-defensible layers + a visible demo | edge-only, autonomy-only, full-stack-thin |
 | **001** | Sim environment | **Isaac Sim on Windows + ROS 2 across WSL** | best sensor realism + industry signal; sim-to-real = driver swap | pybullet, Gazebo, custom, Isaac-in-WSL |
 | **007** | Sensor modalities | **radar + EO/IR camera + lidar**, phased; fixed **and** drone-mounted; heterogeneous loadouts | each covers the others' failure modes; richest fusion story | single-modality, camera+lidar only |
-| **008** | Vision & staging | **6 steps → staged build to a learned autonomy layer**; each ships alone | anti-monster discipline; the baseline ladder | monolithic build |
+| **008** | Vision & staging | **6 steps → a vision-language-action swarm layer**; each ships alone | anti-monster discipline; the baseline ladder | monolithic build |
 | **010** | State estimator | **UKF** (IMM as documented upgrade) | 3 heterogeneous `h(x)` → no Jacobians to maintain | EKF, IMM now, particle filter |
 | **011** | Data association | **JPDA** (MHT fallback) | soft association survives clutter; upgrade is an interface swap | GNN/Hungarian, MHT now, learned |
 | **012** | Classification fusion | **Dempster-Shafer** | sensors have different vocabularies; ignorance ≠ uniform prior | naive Bayes, confusion matrices, voting |
@@ -1530,9 +1529,11 @@ A learned brain behind the same L2 interface, trained on kinematics first and re
 real quadrotor dynamics after the fidelity-ladder switch. Expect the usual multi-agent
 learning pain: non-stationarity, credit assignment, reward design.
 
-### Step 5 — Learned autonomy layer
-End-to-end learned mission control running inside the same architecture, trained on
-simulator-generated demonstrations. That dataset is the project's key enabling asset, and it
+### Step 5 — The vision-language-action layer
+A model taking drone imagery plus operator language and producing swarm behaviour end to end,
+running inside the same architecture. Built on an open pretrained model — OpenVLA, SmolVLA and
+openpi are the realistic starting points — and fine-tuned on demonstrations generated in
+simulation. That dataset is the project's key enabling asset, and it
 needs cloud GPUs — the 8 GB laptop won't train anything at that scale.
 
 ### The through-line

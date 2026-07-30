@@ -147,7 +147,7 @@ _Last updated: 2026-07-29 (post thin-slice completion)._
   renumber 012→013. Decision 001 amended (Foxy→Humble, mirrored networking, loopback profile).
   Scene Pause fix (timeline-gated motion). Offline UKF regression test added (`tests/test_ukf.py`).
 - **2026-07-28:** Option B (thin vertical slice first) chosen over config-depth-first. Vision
-  charter `008` written (6 steps → learned layer paper). Central topology established for cheap-drone
+  charter `008` written (6 steps → a vision-language-action swarm layer). Central topology established for cheap-drone
   hardware demos.
 - **2026-07-27:** Decision `013` (radar-primary + parallax-fallback depth, 9-D full-extent state,
   yaw-from-velocity with yaw-state upgrade path). Implementation override recorded in CLAUDE.md.
