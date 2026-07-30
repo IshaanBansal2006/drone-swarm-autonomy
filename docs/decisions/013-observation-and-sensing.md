@@ -50,7 +50,7 @@ boxes `[u, v, w, h]`. A range-capable sensor (radar) is available as the primary
 - Camera = pinhole `CameraModel` (intrinsics + per-step drone pose as extrinsics).
 - Box→image via **8-corner projection** (exact perspective envelope), not a small-object approx.
 - Radar = ~~**2-D azimuth** radar `[range, azimuth, doppler]`, no elevation~~ **AMENDED
-  2026-07-29 (user decision, resolving backlog D-B5):** radar is **3-D**:
+  2026-07-29 :** radar is **3-D**:
   `[range, azimuth, elevation, doppler]`, matching decision `007`'s `RadarReturn` schema.
   Rationale: sensor redundancy ("more backups" — either sensor alone now recovers 3-D
   position, per the project's graceful-degradation theme) and better vertical behavior (the

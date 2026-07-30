@@ -34,7 +34,7 @@ interview material.
 
 **CBBA.**
 
-Rationale (user, 2026-07-30): it is the deep, interview-defensible allocator the design doc
+Rationale: it is the deep, interview-defensible allocator the design doc
 planned for, and its decentralized consensus structure is the honest match for the
 mini-Lattice thesis (drones that could each run their own allocator, even though the sim
 executes centrally for now). Going straight to CBBA rather than a Hungarian-first milestone;

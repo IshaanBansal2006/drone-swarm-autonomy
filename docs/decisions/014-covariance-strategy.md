@@ -43,7 +43,7 @@ tie nominal; SR-UKF best under stress; Joseph a free second.
 `edge.filters.make_filter()`. Shortcut and Joseph remain selectable on the standard UKF for
 comparison and teaching.
 
-Rationale (user): structural PSD safety and the best stress-case accuracy/consistency are
+Rationale: structural PSD safety and the best stress-case accuracy/consistency are
 worth ~30% per-step cost at this problem size (n=9, ~20 µs-scale updates — nowhere near the
 budget). The bake-off harness stays in-repo so the choice can be re-litigated with data.
 

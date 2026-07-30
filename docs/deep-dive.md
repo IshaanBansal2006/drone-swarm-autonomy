@@ -99,8 +99,8 @@ layer code was written.
 
 From `CLAUDE.md`, the rules that shape how this repo is built:
 
-- **Every non-trivial decision is the user's.** Options + pros/cons + theory are laid out;
-  the user picks; the choice is recorded in `docs/decisions/NNN-*.md` before implementation.
+- **Every non-trivial decision is the project's.** Options + pros/cons + theory are laid out;
+  I picks; the choice is recorded in `docs/decisions/NNN-*.md` before implementation.
 - **Interfaces are stable; implementations are swappable.** Every algorithm sits behind a
   seam so it can be replaced (or degraded to a baseline) without touching its consumers.
 - **Everything gets explained twice** — high-level in conversation, line-by-line in

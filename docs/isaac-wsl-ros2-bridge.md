@@ -237,7 +237,7 @@ Env hookup: WSL `FASTRTPS_DEFAULT_PROFILES_FILE=<repo>/config/fastdds-loopback.x
   tree half-alive mid-shutdown.
 - **Windows env vars via `setx` only reach *new* processes.** Isaac must be fully relaunched
   (not just scene-reloaded) to see them.
-- **zsh vs bash:** the user's shell is zsh; `source /opt/ros/humble/setup.bash` fails under
+- **zsh vs bash:** the project's shell is zsh; `source /opt/ros/humble/setup.bash` fails under
   zsh. `ros-env.sh` branches on `$ZSH_VERSION` → `setup.zsh` / `setup.bash`.
 - **This sandbox blocks foreground `sleep`** (exit 144) and gets flaky with `pkill` in
   compound commands — long-running/waiting work goes in background tasks instead.

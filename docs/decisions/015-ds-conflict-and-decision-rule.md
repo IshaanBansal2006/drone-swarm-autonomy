@@ -31,7 +31,7 @@ source supported. Separately, fused belief functions give interval-valued suppor
   times. *Pros:* simple, symmetric, dilutes outliers. *Cons:* ad hoc; averaging before
   combining abandons the independent-evidence semantics that motivate DS in the first place.
 
-**Decision: conflict-weighted discounting.** Rationale (user, 2026-07-29): it best matches
+**Decision: conflict-weighted discounting.** Rationale: it best matches
 the project's heterogeneous-sensor reality — the system should attribute disagreement to an
 unreliable *source* rather than declare global ignorance (Yager) or blur the evidence
 (Murphy) — and the reliability-weighting story is the defensible one for a defense-autonomy
@@ -58,7 +58,7 @@ leave-one-out combination instead of mean pairwise; time-smoothed α (sensor hea
   display and the L4 approve-gate. *Cons:* flattens the Bel/Pl interval at decision time —
   the "how uncertain" signal must be read from the interval, not from BetP alone.
 
-**Decision: pignistic.** Rationale (user): principled middle ground between the optimistic
+**Decision: pignistic.** Rationale: principled middle ground between the optimistic
 and conservative extremes, and the emitted `(class, confidence)` pair is exactly what the
 downstream layers need.
 

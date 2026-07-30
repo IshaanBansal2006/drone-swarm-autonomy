@@ -34,7 +34,7 @@ learned layer will eventually plug in.
 tasks per drone. The decomposer sits behind a swappable interface with an explicit LLM slot
 for the future.**
 
-Rationale (user, 2026-07-30):
+Rationale:
 1. **The LLM slot is a certainty, not a maybe** — the Step-5 learned layer (and Step-3 language
    front-end) will need to inject decompositions. Designing the decomposer as a swappable
    component now (the decision-`008` "swappable brain" principle applied one level down)

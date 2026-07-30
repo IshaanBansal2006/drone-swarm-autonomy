@@ -34,7 +34,7 @@ implementation detail, not the 022 decision) and emitted as one coverage task pe
 CBBA (021) then allocates the region-tasks — proximity scoring naturally hands each drone
 its own cell.
 
-**The unknown-map switch (user requirement, planned):** the user intends to move to unknown
+**The unknown-map switch (user requirement, planned):** I intends to move to unknown
 maps with physical hardware later. The grid representation is chosen PRECISELY because
 frontier exploration is also grid-based (occupancy grid): the planner sits behind a
 `CoveragePlanner` protocol, and swapping `VoronoiCoverage` → `FrontierCoverage` reuses the
