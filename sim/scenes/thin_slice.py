@@ -45,6 +45,7 @@ simulation_app.update()
 # deterministic. /tf stays wired for reference; /target_pose is the truth feed.
 import rclpy  # noqa: E402
 from geometry_msgs.msg import PoseStamped  # noqa: E402
+from std_msgs.msg import String  # noqa: E402
 
 # --- Scene -----------------------------------------------------------------
 stage_utils.create_new_stage()
@@ -57,6 +58,17 @@ TARGET_PATH = "/World/target"
 Cube(paths=TARGET_PATH, positions=[0.0, 0.0, 0.5], sizes=1.0, scales=[0.2, 0.2, 0.2])
 target = GeomPrim(paths=TARGET_PATH)  # visual-only; we drive its pose kinematically
 
+# Fleet prims (Step 1/2): kinematics run WSL-side in the L2 KinematicBackend
+# (single source of truth); Isaac only RENDERS the poses arriving on
+# /drone_poses. This inverts at the 008 fidelity-ladder upgrade, when real
+# quadrotor dynamics move into the sim. Must match mission_node.FLEET ids.
+DRONE_IDS = ["d0", "d1"]
+drone_prims = {}
+for i, did in enumerate(DRONE_IDS):
+    path = f"/World/drone_{did}"
+    Cube(paths=path, positions=[-5.0 + 10.0 * i, -5.0, 2.0], sizes=1.0,
+         scales=[0.3, 0.3, 0.1])  # flat slab ~ quad silhouette
+    drone_prims[did] = GeomPrim(paths=path)
 
 # --- ROS2 action graph: /clock + /tf(target) -------------------------------
 # (ROS2 publishers use the default context/domain, i.e. ROS_DOMAIN_ID — same as clock.py.)
@@ -115,6 +127,15 @@ rclpy.init()
 ros_node = rclpy.create_node("thin_slice_scene")
 pose_pub = ros_node.create_publisher(PoseStamped, "/target_pose", 10)
 
+_latest_drone_poses = {}
+
+
+def _on_drone_poses(msg):
+    _latest_drone_poses.update(__import__("json").loads(msg.data))
+
+
+ros_node.create_subscription(String, "/drone_poses", _on_drone_poses, 10)
+
 print("[thin_slice] publishing /clock, /tf and /target_pose. Ctrl+C to stop.")
 while simulation_app.is_running():
     if timeline.is_playing():
@@ -127,7 +148,13 @@ while simulation_app.is_running():
         msg.pose.position.x, msg.pose.position.y, msg.pose.position.z = pos.tolist()
         msg.pose.orientation.w = 1.0
         pose_pub.publish(msg)
+        # render the fleet at its latest commanded poses (L2 owns the dynamics)
+        for did, prim in drone_prims.items():
+            if did in _latest_drone_poses:
+                prim.set_world_poses(positions=[_latest_drone_poses[did]],
+                                     orientations=[[1.0, 0.0, 0.0, 0.0]])
         t += DT
+    rclpy.spin_once(ros_node, timeout_sec=0.0)  # ingest /drone_poses
     simulation_app.update()
 
 ros_node.destroy_node()
