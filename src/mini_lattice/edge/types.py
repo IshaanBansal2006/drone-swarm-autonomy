@@ -31,11 +31,21 @@ class TrackState:
 
 @dataclass
 class Track:
-    """A confirmed track — the output of the tracker."""
+    """A confirmed track — the output of the tracker.
+
+    `state` is whatever the configured filter carries: `TrackState` (x, P) for
+    the standard UKF, `SRTrackState` (x, Cholesky factor) for the SR-UKF
+    default (decision 014). Both expose `.x`.
+    """
 
     track_id: int
-    state: TrackState
-    class_beliefs: dict[str, float] = field(default_factory=dict)  # DS belief per class
+    state: "TrackState | object"  # TrackState | SRTrackState (avoid import cycle)
+    # Canonical DS-native evidence state (decision D-B7, 2026-07-29): a mass
+    # function over focal SETS of classes — carries the full ignorance structure
+    # so next cycle's evidence fuses exactly. Consumers wanting plain numbers
+    # call DSClassifier.decide()/pignistic() on it; storing flattened per-class
+    # probabilities here would make correct temporal fusion impossible.
+    class_beliefs: dict[frozenset[str], float] = field(default_factory=dict)
     age: int = 0  # number of update cycles since initiation
     misses: int = 0  # consecutive update cycles with no associated detection
     source_sensor_ids: list[str] = field(default_factory=list)
