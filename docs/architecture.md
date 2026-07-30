@@ -1,6 +1,8 @@
 # Architecture
 
-The authoritative design lives in the [Notion project page](https://app.notion.com/p/399ca937182781478f0ccef0ac8be7a4). This file mirrors the current architecture summary and is updated as decisions land.
+A summary of the current architecture, updated as decisions land. The reasoning behind each
+choice lives in [`docs/decisions/`](decisions/); the full walkthrough is in
+[`docs/deep-dive.md`](deep-dive.md).
 
 ## Data flow
 
