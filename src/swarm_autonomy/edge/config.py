@@ -114,6 +114,11 @@ class JPDAConfig(BaseModel):
 
     p_detection: float = 0.9  # probability sensor detects a target in gate
     p_false_alarm: float = 1e-5  # spatial density of false alarms
+    # Cap on exhaustively enumerated joint events before falling back to
+    # independent PDA (and logging it). Feasible events grow combinatorially in
+    # tracks x overlapping detections; a k-best solver replaces enumeration at
+    # scale. 10k is generous for the 2-5 target scenes this is exact for.
+    max_events: int = 10_000
 
 
 class TrackerConfig(BaseModel):
