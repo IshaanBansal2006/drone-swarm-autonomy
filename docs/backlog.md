@@ -39,14 +39,17 @@ _Last updated: 2026-07-29 (post thin-slice completion)._
     asserts fused class + confidence).
 - **`h_lidar`:** Phase 3 stub (decision `007` phasing).
 - **Housekeeping (found during the 2026-07-30 deep-dive survey):**
-  - `tests/edge/test_ukf.py` (user's original, 2026-07-13) coexists with `tests/test_ukf.py`.
-    The older one builds 6-D `TrackState`s against a now-9-D `UKFConfig()` default — it passes,
-    but it's testing a stale assumption. Merge or retire.
-  - `scripts/discovery-server.sh` is **vestigial** — the discovery-server approach was retired
-    in favor of the loopback profile (bridge doc Issue 9). Keep only as a documented dead end.
+  - ~~`tests/edge/test_ukf.py` duplicate~~ — **RETIRED 2026-07-30.** On inspection every test
+    body was `pass`: an all-stub skeleton from 2026-07-13 whose fixtures built 6-D `TrackState`s
+    against a now-9-D `UKFConfig()`. It contributed zero assertions while reading as coverage in
+    the file list — strictly worse than absent. `tests/test_ukf.py` (real assertions, incl. the
+    sigma-point regression lock) is the only UKF suite. `tests/edge/` package removed with it.
+  - ~~`scripts/discovery-server.sh` vestigial~~ — **already deleted**; the dead end survives where
+    it belongs, as documentation (bridge doc Issue 9), not as runnable code.
   - Interim `/tracks` JSON should become a real `TrackMsg` publish (finish `040` adoption);
     `mission_node._on_tracks` currently hand-adapts short keys (`id`→`track_id`, `class`→
-    `class_label`).
+    `class_label`) and defaults `position_cov` to zeros. **Two open sub-decisions before this can
+    land: the frame envelope shape, and where `position_cov` comes from.**
 - ~~Thin-slice node runs its own fusion loop~~ — **PORTED 2026-07-30** onto
   `MultiTargetTracker` (683 live cycles: birth→confirm→track, class=vehicle(1.00), err
   ~0.1–0.3 m; interim JSON `/tracks` topic pending 040). Scene truth feed moved from the

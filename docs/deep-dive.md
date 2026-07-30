@@ -1515,8 +1515,8 @@ checklist, by topic.
 - **MOTA / MOTP / IDF1 harness** against Isaac ground truth — also the metric substrate for
   comparing later approaches on equal footing.
 - **Publish `TrackMsg` properly** instead of interim JSON (finish `040` adoption).
-- **Cleanup:** the original `tests/edge/test_ukf.py` vs the current `tests/test_ukf.py`;
-  `scripts/discovery-server.sh` is now vestigial.
+- ~~**Cleanup:** the original `tests/edge/test_ukf.py`; vestigial `scripts/discovery-server.sh`~~
+  — both retired 2026-07-30 (the old test suite turned out to be all-`pass` stubs).
 
 ### Step 3 — Language front-end
 Speech → transcription → a model turning natural language into the same `StructuredIntent` the
