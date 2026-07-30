@@ -246,7 +246,7 @@ Env hookup: WSL `FASTRTPS_DEFAULT_PROFILES_FILE=<repo>/config/fastdds-loopback.x
 
 ## 2b. Epilogue — first live L1 run over the bridge (same day)
 
-With the bridge working, the thin-slice tracker node (`src/mini_lattice/edge/thin_slice_node.py`)
+With the bridge working, the thin-slice tracker node (`src/swarm_autonomy/edge/thin_slice_node.py`)
 consumed `/tf`, synthesized camera+radar measurements through the real observation models, and
 ran the 9-D UKF. Two more issues surfaced immediately — estimation bugs, not bridge bugs, but
 part of the same day's record:

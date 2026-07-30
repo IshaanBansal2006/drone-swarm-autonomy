@@ -18,8 +18,8 @@ from typing import Protocol
 
 import numpy as np
 
-from mini_lattice.autonomy.world_state import WorldState
-from mini_lattice.schemas import StructuredIntent
+from swarm_autonomy.autonomy.world_state import WorldState
+from swarm_autonomy.schemas import StructuredIntent
 
 _task_counter = itertools.count()
 

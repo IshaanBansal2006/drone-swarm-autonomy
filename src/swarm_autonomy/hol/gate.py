@@ -20,7 +20,7 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from mini_lattice.schemas import EngagementProposal
+from swarm_autonomy.schemas import EngagementProposal
 
 log = logging.getLogger(__name__)
 

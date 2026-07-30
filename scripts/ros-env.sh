@@ -1,4 +1,4 @@
-# mini-lattice — ROS2 cross-boundary environment (WSL side)
+# drone-swarm-autonomy — ROS2 cross-boundary environment (WSL side)
 # Source this in every WSL shell that talks to Isaac Sim on Windows:
 #   source scripts/ros-env.sh
 #

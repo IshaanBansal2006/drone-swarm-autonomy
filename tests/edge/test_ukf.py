@@ -3,9 +3,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mini_lattice.edge.config import UKFConfig
-from mini_lattice.edge.types import TrackState
-from mini_lattice.edge.ukf import UKF
+from swarm_autonomy.edge.config import UKFConfig
+from swarm_autonomy.edge.types import TrackState
+from swarm_autonomy.edge.ukf import UKF
 
 
 @pytest.fixture

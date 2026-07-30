@@ -10,7 +10,7 @@ state definition. The choice controls what is observable — especially **depth*
 which a single monocular camera cannot see directly. This decision also fixes the target
 state layout that the UKF, JPDA, and classifier all operate on.
 
-Platform: sensors ride a moving drone (mini-lattice). Camera detections are pixel bounding
+Platform: sensors ride a moving drone (drone-swarm-autonomy). Camera detections are pixel bounding
 boxes `[u, v, w, h]`. A range-capable sensor (radar) is available as the primary depth source.
 
 ## Options considered

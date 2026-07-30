@@ -5,11 +5,11 @@ from __future__ import annotations
 
 import pytest
 
-from mini_lattice.autonomy.allocator import CBBAAllocator
-from mini_lattice.autonomy.bt import Action, Fallback, Sequence, Status
-from mini_lattice.autonomy.decomposer import HTNDecomposer, LLMDecomposer, Task
-from mini_lattice.autonomy.world_state import DroneState, WorldState
-from mini_lattice.schemas import StructuredIntent, TrackMsg
+from swarm_autonomy.autonomy.allocator import CBBAAllocator
+from swarm_autonomy.autonomy.bt import Action, Fallback, Sequence, Status
+from swarm_autonomy.autonomy.decomposer import HTNDecomposer, LLMDecomposer, Task
+from swarm_autonomy.autonomy.world_state import DroneState, WorldState
+from swarm_autonomy.schemas import StructuredIntent, TrackMsg
 
 
 def make_world(n_drones: int = 2) -> WorldState:
@@ -52,7 +52,7 @@ def test_htn_errors_are_actionable() -> None:
 
 
 def test_voronoi_scan_partitions_and_sweeps() -> None:
-    from mini_lattice.autonomy.coverage import VoronoiCoverage
+    from swarm_autonomy.autonomy.coverage import VoronoiCoverage
 
     w = make_world(n_drones=2)  # seeds at x=0 and x=5
     htn = HTNDecomposer(coverage=VoronoiCoverage(grid_step=1.0))

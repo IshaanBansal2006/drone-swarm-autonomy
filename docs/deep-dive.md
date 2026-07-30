@@ -1,4 +1,4 @@
-# Mini-Lattice — The Complete Deep Dive
+# Drone Swarm Autonomy — The Complete Deep Dive
 
 *Everything in this project: the code, the decisions, the math, the bugs, and why each choice
 was made. Written 2026-07-30, after Steps 0–2 shipped and ran live.*
@@ -32,14 +32,14 @@ before. Read it with the repo open.
 
 # Part 0 — The Project
 
-## 0.1 What Mini-Lattice is
+## 0.1 What Drone Swarm Autonomy is
 
 A **multi-agent command-and-control platform**: several drones + heterogeneous sensors + one
 operator. The operator issues high-level intent ("patrol that area", "track that object");
 the system fuses sensor data into a single world picture, decomposes the intent into tasks,
 allocates tasks across drones, executes them, and gates sensitive actions on human approval.
 
-It is modeled on **Anduril's Lattice OS** — hence the name — and organized into four layers:
+It follows the layered pattern used by modern defence C2 platforms, organized into four layers:
 
 | Layer | Name | Job | Depth (decision `000`) |
 |---|---|---|---|
@@ -67,7 +67,7 @@ long build with nothing to show.
 |---|---|---|---|
 | **0** | L1 | swarm tracks itself + objects in sim | ✅ **done + live** |
 | **1** | L2 | structured command → decompose → allocate → execute | ✅ **done + live** |
-| **2** | L3+L4 | full mini-Lattice, demo-ready | ✅ **done + live** |
+| **2** | L3+L4 | full stack, demo-ready | ✅ **done + live** |
 | **3** | front of L2 | speech → Whisper → LLM → structured goals | next |
 | **4** | L2 brain | custom RL swarm policy (learned baseline) | planned |
 | **5** | L2 brain | **vision-language-action layer** | the goal |
@@ -112,7 +112,7 @@ From `CLAUDE.md`, the rules that shape how this repo is built:
 ```
 ┌──────────────── Windows 11 ────────────────┐   ┌────────── WSL2 (Ubuntu 22.04) ──────────┐
 │  Isaac Sim 6.0.1  (C:\IsaacSim)            │   │  ROS 2 Humble                           │
-│   - the simulated world + sensors          │◀─▶│  - all mini-lattice code (L1–L4)        │
+│   - the simulated world + sensors          │◀─▶│  - all drone-swarm-autonomy code (L1–L4)        │
 │   - RTX 4070 Laptop, 8 GB VRAM             │   │  - Python 3.10, numpy/pydantic/rerun    │
 │   - internal ROS 2 (jazzy) bridge          │   │  - 4 GB RAM cap                         │
 └────────────────────────────────────────────┘   └─────────────────────────────────────────┘
@@ -1244,8 +1244,8 @@ viewer**, and mirrored networking means the Windows browser reaches it at
 One-shot CLI → `StructuredIntent` → `/intent`:
 
 ```bash
-python3 -m mini_lattice.cop.console patrol --area 0,0 20,0 20,20 0,20
-python3 -m mini_lattice.cop.console track  --track-id 0
+python3 -m swarm_autonomy.cop.console patrol --area 0,0 20,0 20,20 0,20
+python3 -m swarm_autonomy.cop.console track  --track-id 0
 ```
 
 `parse_intent` is pure (testable); the ROS wrapper **blocks until a subscriber matches** before
@@ -1545,7 +1545,7 @@ was written.
 # Appendix A — File Map
 
 ```
-src/mini_lattice/
+src/swarm_autonomy/
 ├── schemas.py                 040: the 4 cross-layer messages + DS mass codec
 ├── edge/                      ── L1: PERCEPTION ──
 │   ├── types.py               Detection, TrackState, Track
@@ -1589,12 +1589,12 @@ bash scripts/verify-bridge.sh                      # checks discovery AND data
 C:\IsaacSim\run_scene.bat C:\IsaacSim\thin_slice.py
 
 # ── The full demo (each in its own terminal) ──
-python3 src/mini_lattice/edge/thin_slice_node.py       # L1
-python3 src/mini_lattice/autonomy/mission_node.py      # L2
-python3 src/mini_lattice/cop/rerun_bridge.py           # L3 → http://localhost:9090/?url=...
-python3 src/mini_lattice/hol/gate.py                   # L4 (interactive y/n)
-python3 -m mini_lattice.cop.console patrol --area 0,0 20,0 20,20 0,20
-python3 -m mini_lattice.cop.console track --track-id 0
+python3 src/swarm_autonomy/edge/thin_slice_node.py       # L1
+python3 src/swarm_autonomy/autonomy/mission_node.py      # L2
+python3 src/swarm_autonomy/cop/rerun_bridge.py           # L3 → http://localhost:9090/?url=...
+python3 src/swarm_autonomy/hol/gate.py                   # L4 (interactive y/n)
+python3 -m swarm_autonomy.cop.console patrol --area 0,0 20,0 20,20 0,20
+python3 -m swarm_autonomy.cop.console track --track-id 0
 
 # ── Tests & benchmarks ──
 PYTHONPATH=src .venv/bin/python -m pytest tests/ -q

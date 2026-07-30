@@ -12,10 +12,10 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
-from mini_lattice.edge.config import UKFConfig
-from mini_lattice.edge.srukf import SquareRootUKF, SRTrackState
-from mini_lattice.edge.types import TrackState
-from mini_lattice.edge.ukf import UKF
+from swarm_autonomy.edge.config import UKFConfig
+from swarm_autonomy.edge.srukf import SquareRootUKF, SRTrackState
+from swarm_autonomy.edge.types import TrackState
+from swarm_autonomy.edge.ukf import UKF
 
 
 def make_filter(config: UKFConfig) -> UKF | SquareRootUKF:

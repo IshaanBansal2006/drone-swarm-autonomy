@@ -24,11 +24,11 @@ import time
 
 import numpy as np
 
-from mini_lattice.edge.config import UKFConfig
-from mini_lattice.edge.observation import CameraModel, h_camera, h_radar
-from mini_lattice.edge.srukf import SquareRootUKF, SRTrackState
-from mini_lattice.edge.types import TrackState
-from mini_lattice.edge.ukf import UKF
+from swarm_autonomy.edge.config import UKFConfig
+from swarm_autonomy.edge.observation import CameraModel, h_camera, h_radar
+from swarm_autonomy.edge.srukf import SquareRootUKF, SRTrackState
+from swarm_autonomy.edge.types import TrackState
+from swarm_autonomy.edge.ukf import UKF
 
 TRUE_EXTENT = np.array([0.2, 0.2, 0.2])
 VEL = np.array([0.5, 0.2, 0.0])

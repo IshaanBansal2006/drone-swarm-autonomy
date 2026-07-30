@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from mini_lattice.edge.classification import CLASSES, DSClassifier
+from swarm_autonomy.edge.classification import CLASSES, DSClassifier
 
 DS = DSClassifier()
 THETA = frozenset(CLASSES)

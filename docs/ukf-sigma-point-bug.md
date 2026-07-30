@@ -1,7 +1,7 @@
 # Anatomy of a silent estimator bug: sigma points from the wrong triangle
 
 **Found:** 2026-07-29, while implementing the square-root UKF (decision 014).
-**Lived in:** `src/mini_lattice/edge/ukf.py`, `generate_sigma_points` — since the UKF's first
+**Lived in:** `src/swarm_autonomy/edge/ukf.py`, `generate_sigma_points` — since the UKF's first
 implementation (2026-07-13).
 **Class:** silent numerical/math bug — no crash, no exception, plausible outputs, wrong math.
 **Fix:** one line. **Understanding it:** the point of this document.

@@ -17,7 +17,7 @@ seam observable today and swaps out cleanly once 040 is approved).
 
 Run (WSL, Isaac scene running):
     source scripts/ros-env.sh
-    PYTHONPATH="src:$PYTHONPATH" python3 src/mini_lattice/edge/thin_slice_node.py --duration 40
+    PYTHONPATH="src:$PYTHONPATH" python3 src/swarm_autonomy/edge/thin_slice_node.py --duration 40
 """
 
 from __future__ import annotations
@@ -32,11 +32,11 @@ from geometry_msgs.msg import PoseStamped
 from rclpy.node import Node
 from std_msgs.msg import String
 
-from mini_lattice.edge.classification import DSClassifier
-from mini_lattice.edge.config import TrackerConfig
-from mini_lattice.edge.observation import CameraModel, h_camera, h_radar
-from mini_lattice.edge.tracker import MultiTargetTracker
-from mini_lattice.edge.types import Detection
+from swarm_autonomy.edge.classification import DSClassifier
+from swarm_autonomy.edge.config import TrackerConfig
+from swarm_autonomy.edge.observation import CameraModel, h_camera, h_radar
+from swarm_autonomy.edge.tracker import MultiTargetTracker
+from swarm_autonomy.edge.types import Detection
 
 TRUE_EXTENT = np.array([0.2, 0.2, 0.2])
 CAM_OFFSET = np.array([-6.0, -2.0, 3.0])

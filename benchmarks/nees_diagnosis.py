@@ -18,9 +18,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from mini_lattice.edge.config import UKFConfig
-from mini_lattice.edge.filters import initial_state, make_filter
-from mini_lattice.edge.observation import CameraModel, h_camera, h_radar
+from swarm_autonomy.edge.config import UKFConfig
+from swarm_autonomy.edge.filters import initial_state, make_filter
+from swarm_autonomy.edge.observation import CameraModel, h_camera, h_radar
 
 TRUE_EXTENT = np.array([0.2, 0.2, 0.2])
 VEL = np.array([0.5, 0.2, 0.0])

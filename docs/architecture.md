@@ -36,7 +36,7 @@ choice lives in [`docs/decisions/`](decisions/); the full walkthrough is in
 ## Package layout
 
 ```
-src/mini_lattice/
+src/swarm_autonomy/
   edge/       # L1 — sensor sim, fusion, MOT
   autonomy/   # L2 — intent parser, decomposer, allocator, replanner
   cop/        # L3 — COP backend (frontend is a separate app; TBD)

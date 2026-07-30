@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from mini_lattice.schemas import TrackMsg
+from swarm_autonomy.schemas import TrackMsg
 
 
 @dataclass

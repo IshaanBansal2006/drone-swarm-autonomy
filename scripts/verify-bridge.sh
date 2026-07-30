@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# mini-lattice — verify the Isaac Sim (Windows) <-> WSL ROS2 bridge.
+# drone-swarm-autonomy — verify the Isaac Sim (Windows) <-> WSL ROS2 bridge.
 # Usage:  bash scripts/verify-bridge.sh
 #
 # Verifies the loopback UDP-only Fast DDS path (config/fastdds-loopback.xml on

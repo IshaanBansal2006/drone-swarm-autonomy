@@ -26,8 +26,8 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from mini_lattice.autonomy.decomposer import Task
-from mini_lattice.autonomy.world_state import DroneState
+from swarm_autonomy.autonomy.decomposer import Task
+from swarm_autonomy.autonomy.world_state import DroneState
 
 LAMBDA = 0.95  # time discount per second of travel; sets urgency of proximity
 MAX_BUNDLE = 5  # tasks per drone per allocation round (compute guard)

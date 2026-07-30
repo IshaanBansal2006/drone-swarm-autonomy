@@ -1,4 +1,4 @@
-# Mini-Lattice
+# Drone Swarm Autonomy
 
 A multi-agent command-and-control platform for drone swarms, built in simulation.
 
@@ -119,7 +119,7 @@ To run the full system, start the simulation scene, then the layer nodes — the
 ## Layout
 
 ```
-src/mini_lattice/
+src/swarm_autonomy/
   schemas.py      cross-layer message definitions
   edge/           L1 — filters, observation models, association, classification, tracking
   autonomy/       L2 — world state, decomposition, coverage, allocation, execution

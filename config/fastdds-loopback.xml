@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- mini-lattice: Fast DDS profile for the Isaac (Windows) <-> WSL boundary.
+<!-- drone-swarm-autonomy: Fast DDS profile for the Isaac (Windows) <-> WSL boundary.
 
      Mirrored networking gives BOTH OSes the same IP, so default Fast DDS
      (a) treats the other side as same-host and tries shared-memory transport,

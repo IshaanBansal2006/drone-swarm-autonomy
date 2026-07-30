@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from mini_lattice.schemas import (
+from swarm_autonomy.schemas import (
     EngagementProposal,
     StructuredIntent,
     TaskAssignment,

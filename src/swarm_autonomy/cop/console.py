@@ -2,10 +2,10 @@
 the picture; COMMANDS enter through this CLI, since a viewer hosts no buttons).
 
 One-shot by design (scriptable, testable, demo-friendly):
-    python3 -m mini_lattice.cop.console patrol --area 0,0 20,0 20,20 0,20
-    python3 -m mini_lattice.cop.console track --track-id 0
-    python3 -m mini_lattice.cop.console scan --area 0,0 30,0 30,30
-    python3 -m mini_lattice.cop.console goto --point 5,5,2
+    python3 -m swarm_autonomy.cop.console patrol --area 0,0 20,0 20,20 0,20
+    python3 -m swarm_autonomy.cop.console track --track-id 0
+    python3 -m swarm_autonomy.cop.console scan --area 0,0 30,0 30,30
+    python3 -m swarm_autonomy.cop.console goto --point 5,5,2
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ import time
 import rclpy
 from std_msgs.msg import String
 
-from mini_lattice.schemas import StructuredIntent
+from swarm_autonomy.schemas import StructuredIntent
 
 _ids = itertools.count(int(time.time()) % 100000)
 

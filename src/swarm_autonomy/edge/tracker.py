@@ -32,12 +32,12 @@ import logging
 
 import numpy as np
 
-from mini_lattice.edge.classification import DSClassifier
-from mini_lattice.edge.config import TrackerConfig
-from mini_lattice.edge.filters import initial_state, make_filter
-from mini_lattice.edge.jpda import JPDA
-from mini_lattice.edge.observation import CameraModel, h_camera, h_radar
-from mini_lattice.edge.types import Detection, Track
+from swarm_autonomy.edge.classification import DSClassifier
+from swarm_autonomy.edge.config import TrackerConfig
+from swarm_autonomy.edge.filters import initial_state, make_filter
+from swarm_autonomy.edge.jpda import JPDA
+from swarm_autonomy.edge.observation import CameraModel, h_camera, h_radar
+from swarm_autonomy.edge.types import Detection, Track
 
 log = logging.getLogger(__name__)
 

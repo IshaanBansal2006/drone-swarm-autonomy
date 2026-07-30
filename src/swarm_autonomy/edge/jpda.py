@@ -14,8 +14,8 @@ from __future__ import annotations
 import numpy as np
 from numpy.typing import NDArray
 
-from mini_lattice.edge.config import JPDAConfig
-from mini_lattice.edge.types import Detection
+from swarm_autonomy.edge.config import JPDAConfig
+from swarm_autonomy.edge.types import Detection
 
 # Gate probability: the chance a true detection falls inside the chi-squared
 # 95% gate. Matches the CHI2_95 thresholds used per sensor.

@@ -5,7 +5,7 @@
 
 ## Context
 
-Mini-Lattice needs a simulation environment to host N drones + M sensors before any real-hardware step. The choice constrains sensor realism, iteration speed, industry-tool signal, sim-to-real path viability, and cross-boundary transport (this dev machine is WSL2 Ubuntu 22.04 on top of Windows 11 with an RTX 4070 Laptop, 8GB VRAM, 32GB system RAM).
+Drone Swarm Autonomy needs a simulation environment to host N drones + M sensors before any real-hardware step. The choice constrains sensor realism, iteration speed, industry-tool signal, sim-to-real path viability, and cross-boundary transport (this dev machine is WSL2 Ubuntu 22.04 on top of Windows 11 with an RTX 4070 Laptop, 8GB VRAM, 32GB system RAM).
 
 ## Options considered
 

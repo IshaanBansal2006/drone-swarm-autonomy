@@ -110,7 +110,7 @@ _Last updated: 2026-07-29 (post thin-slice completion)._
 - **2026-07-30 (Step 1 kickoff):** L1 node ported onto `MultiTargetTracker` — 683 live
   cycles, class=vehicle(1.00) (see gaps section). Isaac Issue 11 (OmniGraph TF flakiness →
   in-scene rclpy `/target_pose`). **Step-1/2 gates decided by user:** `040` schemas approved
-  → implemented (`src/mini_lattice/schemas.py` + round-trip tests); `020` = HTN→BT hybrid
+  → implemented (`src/swarm_autonomy/schemas.py` + round-trip tests); `020` = HTN→BT hybrid
   with an explicit LLM decomposer seam (RL-first roadmap; learned layer will need the slot); `021` =
   CBBA (straight to the deep piece; Hungarian remains an optional eval baseline). All three
   decision docs record every option + rationale. 24 tests green. NEXT: implement `autonomy/`

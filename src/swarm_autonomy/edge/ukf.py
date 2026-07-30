@@ -11,8 +11,8 @@ from typing import Callable
 import numpy as np
 from numpy.typing import NDArray
 
-from mini_lattice.edge.config import UKFConfig
-from mini_lattice.edge.types import TrackState
+from swarm_autonomy.edge.config import UKFConfig
+from swarm_autonomy.edge.types import TrackState
 
 
 class UKF:

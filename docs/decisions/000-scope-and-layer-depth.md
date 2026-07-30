@@ -5,13 +5,13 @@
 
 ## Context
 
-Mini-Lattice is inspired by Anduril's Lattice OS: one operator, N autonomous vehicles + heterogeneous sensors, unified operating picture, human-on-the-loop safety. A full Lattice is not buildable by one person in a reasonable timeframe. A "mini-Lattice" needs a scoping decision: which layers go deep enough to defend on a whiteboard, and which stay shallow enough to demo but not defend.
+Drone Swarm Autonomy is inspired by Anduril's Lattice OS: one operator, N autonomous vehicles + heterogeneous sensors, unified operating picture, human-on-the-loop safety. A full Lattice is not buildable by one person in a reasonable timeframe. A "mini-Lattice" needs a scoping decision: which layers go deep enough to defend on a whiteboard, and which stay shallow enough to demo but not defend.
 
 ## Options considered
 
 **Option A — Edge Layer only** (deep MOT + fusion, stubs for autonomy/COP/HOL)
 - Pros: Deepest single-topic depth; publishable; matches classical robotics/fusion labs.
-- Cons: Doesn't demonstrate the Lattice paradigm; not enough surface area for autonomy roles.
+- Cons: Doesn't demonstrate the layered C2 paradigm; not enough surface area for autonomy roles.
 
 **Option B — Mission Autonomy only** (deep multi-agent planning, stubs elsewhere)
 - Pros: Fits DeepMind Robotics / CCA-style multi-agent labs; publishable.

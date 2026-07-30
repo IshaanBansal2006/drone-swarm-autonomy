@@ -1,5 +1,5 @@
 @echo off
-REM mini-lattice: launch an Isaac scene (headless-capable) with the ROS2 bridge.
+REM drone-swarm-autonomy: launch an Isaac scene (headless-capable) with the ROS2 bridge.
 REM
 REM This is a WINDOWS launcher. Copy it (and config/fastdds-loopback.xml) to
 REM C:\IsaacSim\ and run:

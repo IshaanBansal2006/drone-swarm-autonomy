@@ -6,13 +6,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mini_lattice.autonomy.allocator import CBBAAllocator
-from mini_lattice.autonomy.bt import Status
-from mini_lattice.autonomy.decomposer import HTNDecomposer, Task
-from mini_lattice.autonomy.executor import ARRIVE_TOL, Executor, KinematicBackend
-from mini_lattice.autonomy.world_state import DroneState, WorldState
-from mini_lattice.hol.gate import ApprovalGate
-from mini_lattice.schemas import EngagementProposal, StructuredIntent, TrackMsg
+from swarm_autonomy.autonomy.allocator import CBBAAllocator
+from swarm_autonomy.autonomy.bt import Status
+from swarm_autonomy.autonomy.decomposer import HTNDecomposer, Task
+from swarm_autonomy.autonomy.executor import ARRIVE_TOL, Executor, KinematicBackend
+from swarm_autonomy.autonomy.world_state import DroneState, WorldState
+from swarm_autonomy.hol.gate import ApprovalGate
+from swarm_autonomy.schemas import EngagementProposal, StructuredIntent, TrackMsg
 
 
 def make_world() -> WorldState:

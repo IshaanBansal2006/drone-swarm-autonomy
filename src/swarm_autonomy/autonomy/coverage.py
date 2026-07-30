@@ -16,9 +16,9 @@ from typing import Protocol
 
 import numpy as np
 
-from mini_lattice.autonomy.decomposer import Task
-from mini_lattice.autonomy.world_state import WorldState
-from mini_lattice.schemas import StructuredIntent
+from swarm_autonomy.autonomy.decomposer import Task
+from swarm_autonomy.autonomy.world_state import WorldState
+from swarm_autonomy.schemas import StructuredIntent
 
 _scan_counter = itertools.count()
 

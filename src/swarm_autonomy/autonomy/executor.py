@@ -21,9 +21,9 @@ from typing import Protocol
 
 import numpy as np
 
-from mini_lattice.autonomy.bt import Action, Node, Sequence, Status
-from mini_lattice.autonomy.decomposer import Task
-from mini_lattice.autonomy.world_state import WorldState
+from swarm_autonomy.autonomy.bt import Action, Node, Sequence, Status
+from swarm_autonomy.autonomy.decomposer import Task
+from swarm_autonomy.autonomy.world_state import WorldState
 
 log = logging.getLogger(__name__)
 

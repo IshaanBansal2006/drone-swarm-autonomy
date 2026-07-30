@@ -69,7 +69,7 @@ def main() -> None:  # pragma: no cover — thin ROS wrapper
     parser = argparse.ArgumentParser()
     parser.add_argument("--save", help="write a .rrd recording instead of serving")
     args = parser.parse_args()
-    rr.init("mini-lattice-cop")
+    rr.init("drone-swarm-autonomy-cop")
     if args.save:
         rr.save(args.save)
     else:

@@ -1,4 +1,4 @@
-"""Mini-lattice thin-slice scene (Step 0 / Option B).
+"""Drone Swarm Autonomy thin-slice scene (Step 0 / Option B).
 
 Lightweight ground-truth-pose scene: a ground plane, a light, and ONE cube
 ("target") that moves at constant velocity. Publishes:
@@ -9,7 +9,7 @@ The WSL tracker subscribes to /tf, corrupts it with noise, and runs it through
 the UKF — proving sim -> ROS2 -> L1 end to end.
 
 RUN ON WINDOWS (Isaac's bundled python, NOT the project venv):
-  C:\\IsaacSim\\python.bat \\\\wsl.localhost\\Ubuntu-22.04\\home\\ishaan\\projects\\mini-lattice\\sim\\scenes\\thin_slice.py
+  C:\\IsaacSim\\python.bat \\\\wsl.localhost\\Ubuntu-22.04\\home\\ishaan\\projects\\drone-swarm-autonomy\\sim\\scenes\\thin_slice.py
 
 Grounded in the shipped examples for Isaac Sim 6.0.1:
   standalone_examples/api/isaacsim.ros2.bridge/clock.py

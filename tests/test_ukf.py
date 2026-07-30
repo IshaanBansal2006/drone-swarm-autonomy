@@ -11,10 +11,10 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from mini_lattice.edge.config import UKFConfig
-from mini_lattice.edge.observation import CameraModel, h_camera, h_radar
-from mini_lattice.edge.types import TrackState
-from mini_lattice.edge.ukf import UKF
+from swarm_autonomy.edge.config import UKFConfig
+from swarm_autonomy.edge.observation import CameraModel, h_camera, h_radar
+from swarm_autonomy.edge.types import TrackState
+from swarm_autonomy.edge.ukf import UKF
 
 TRUE_EXTENT = np.array([0.2, 0.2, 0.2])
 VEL = np.array([0.5, 0.2, 0.0])
@@ -44,8 +44,8 @@ def chase_camera(target_pos: np.ndarray) -> CameraModel:
 
 def test_factory_default_is_srukf() -> None:
     """Decision 014: covariance_form defaults to srukf; factory dispatches."""
-    from mini_lattice.edge.filters import initial_state, make_filter
-    from mini_lattice.edge.srukf import SquareRootUKF, SRTrackState
+    from swarm_autonomy.edge.filters import initial_state, make_filter
+    from swarm_autonomy.edge.srukf import SquareRootUKF, SRTrackState
 
     filt = make_filter(UKFConfig())
     assert isinstance(filt, SquareRootUKF)
@@ -87,7 +87,7 @@ def test_sigma_points_reproduce_covariance() -> None:
 
 def test_srukf_matches_ukf_on_linear_case() -> None:
     """SR-UKF and UKF must agree (same math, different covariance carrier)."""
-    from mini_lattice.edge.srukf import SquareRootUKF, SRTrackState
+    from swarm_autonomy.edge.srukf import SquareRootUKF, SRTrackState
 
     ukf = make_ukf()
     sr = SquareRootUKF(ukf.cfg)

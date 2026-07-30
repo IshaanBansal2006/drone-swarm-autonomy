@@ -29,7 +29,7 @@ changing the pydantic definitions.
 
 ## Consequences
 
-- Implemented at `src/mini_lattice/schemas.py` (top-level — all layers import it; no layer
+- Implemented at `src/swarm_autonomy/schemas.py` (top-level — all layers import it; no layer
   owns it).
 - The interim `String`+JSON transport is a documented stopgap: pydantic `model_dump_json` /
   `model_validate_json` are the wire codec either way.

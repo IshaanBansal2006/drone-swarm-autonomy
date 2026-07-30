@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import numpy as np
 
-from mini_lattice.edge.config import TrackerConfig
-from mini_lattice.edge.observation import CameraModel, h_camera, h_radar
-from mini_lattice.edge.tracker import MultiTargetTracker
-from mini_lattice.edge.types import Detection
+from swarm_autonomy.edge.config import TrackerConfig
+from swarm_autonomy.edge.observation import CameraModel, h_camera, h_radar
+from swarm_autonomy.edge.tracker import MultiTargetTracker
+from swarm_autonomy.edge.types import Detection
 
 TRUE_EXTENT = np.array([0.2, 0.2, 0.2])
 VEL = np.array([0.5, 0.2, 0.0])
@@ -67,7 +67,7 @@ def test_tracker_full_lifecycle() -> None:
 
     # classification fused across sensors + time (012/015/D-B7): DS-native
     # masses on the track, pignistic decision resolves to the true class
-    from mini_lattice.edge.classification import DSClassifier
+    from swarm_autonomy.edge.classification import DSClassifier
     beliefs = confirmed[0].class_beliefs
     assert beliefs and abs(sum(beliefs.values()) - 1.0) < 1e-6
     label, conf = DSClassifier().decide(beliefs)

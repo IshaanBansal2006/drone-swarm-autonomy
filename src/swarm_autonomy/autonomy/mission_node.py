@@ -37,12 +37,12 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
-from mini_lattice.autonomy.allocator import CBBAAllocator
-from mini_lattice.autonomy.coverage import VoronoiCoverage
-from mini_lattice.autonomy.decomposer import HTNDecomposer, Task
-from mini_lattice.autonomy.executor import Executor, KinematicBackend
-from mini_lattice.autonomy.world_state import DroneState, WorldState
-from mini_lattice.schemas import EngagementProposal, StructuredIntent, TrackMsg
+from swarm_autonomy.autonomy.allocator import CBBAAllocator
+from swarm_autonomy.autonomy.coverage import VoronoiCoverage
+from swarm_autonomy.autonomy.decomposer import HTNDecomposer, Task
+from swarm_autonomy.autonomy.executor import Executor, KinematicBackend
+from swarm_autonomy.autonomy.world_state import DroneState, WorldState
+from swarm_autonomy.schemas import EngagementProposal, StructuredIntent, TrackMsg
 
 TICK_DT = 0.1  # control cycle (s)
 ENGAGE_RANGE = 3.0  # m — follower proximity that triggers a proposal
