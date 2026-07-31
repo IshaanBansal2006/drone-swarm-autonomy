@@ -1,6 +1,7 @@
 # 016 — Joint data association (JPDA)
 
-**Status:** Accepted — enumeration implemented, k-best (Murty) pending a solver decision
+**Status:** STOPPED 2026-07-31 at the project pivot — enumeration implemented and tested, never
+integrated. See the stop note at the end.
 **Date:** 2026-07-30
 **Amends:** `011` (data association), which chose JPDA and deferred the *joint* layer
 
@@ -82,3 +83,41 @@ truncates silently — a silently-truncated event set produces betas that look n
 - **Assignment solver source** for Murty: `scipy.optimize.linear_sum_assignment` (adds a heavy
   dependency to a numpy+pydantic project) vs a hand-written Hungarian (~100 lines, no dependency,
   and squarely the kind of algorithm this project exists to be able to defend). Undecided.
+
+---
+
+## Stop note — 2026-07-31: work halted at the project pivot
+
+**Status changed to: implemented and tested, never integrated. Deliberately stopped.**
+
+The project pivoted to a focused research question — decentralized VLM-driven semantic coverage
+under communication and perception faults — whose pipeline is
+`pixels → VLM → importance field → consensus → coverage control → motion`. There is no
+multi-object tracking anywhere in it, so the whole L1 association stack is out of scope.
+
+**What exists and is green:**
+
+- `edge/jpda.py` — exhaustive feasible-event enumeration with marginalisation, overflow guard,
+  and the fallback-with-warning path. 7 tests.
+- `assignment.py` — hand-written Hungarian (shortest augmenting path with potentials), pinned
+  against brute-force permutation across 7 matrix shapes. 12 tests.
+
+**What was queued and is NOT built:** Murty's k-best (the solver above was written for it), the
+seeded multi-target scene, the HOTA harness, and the `tracker.py` sensor-major restructure that
+would have made joint association run live.
+
+**Why the enumerator is not wired in.** Integration required inverting the tracker's loop from
+track-major to sensor-major (see Consequences above). That restructure was the next step when the
+pivot landed. So `016`'s algorithm is correct, tested, and *dormant* — a decision doc describing a
+capability the running system does not use. Recorded here rather than quietly deleted, because
+the alternative is a repo whose docs claim more than its code does.
+
+**What carries into the new project:** nothing from this decision directly. The Tier-2 robustness
+mechanism there is conflict-weighted Dempster–Shafer discounting (decision `015`), where the
+indices move from sensor-vs-sensor to agent-vs-agent. Belief combination is not data association —
+it needs neither the Hungarian nor the joint enumerator.
+
+**If this is ever resumed**, the order is: Murty behind the same interface with the enumerator kept
+permanently as the exactness oracle, then the sensor-major restructure, then the multi-target
+scene, then HOTA. The open solver question in the section above is now answered — the hand-written
+Hungarian in `assignment.py` was the choice, and it is done.
