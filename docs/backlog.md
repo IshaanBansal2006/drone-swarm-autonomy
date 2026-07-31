@@ -160,3 +160,31 @@ _Last updated: 2026-07-29 (post thin-slice completion)._
   yaw-from-velocity with yaw-state upgrade path). Implementation override recorded in CLAUDE.md.
 - **2026-07-13 (user, solo):** Decisions `007` (3 modalities, phased), `010` (UKF), `011` (JPDA),
   `012` (Dempster-Shafer). UKF implemented in `ukf.py`.
+
+---
+
+## Project pivot — 2026-07-31
+
+This repository is **closed to new feature work.** The project pivoted to a focused research
+question (decentralized VLM-driven semantic coverage under communication and perception faults),
+whose pipeline contains no multi-object tracking.
+
+**What that means for the items above:** the L1 open items (joint JPDA integration, Murty's
+k-best, the multi-target scene, the MOTA/HOTA harness, variable-dt D-B6, angular wrapping,
+sliding-window M-of-N confirmation, the extent-bias fix for D-B11) are **not being worked**. They
+remain accurate descriptions of the system's limits — useful for anyone reading the code, and
+honest about what was and wasn't finished. They are not a plan.
+
+Stopped mid-flight, green and tested but unintegrated: exhaustive joint-event enumeration in
+`edge/jpda.py` and the hand-written Hungarian in `assignment.py`. Full account in decision `016`'s
+stop note.
+
+**What this repo is now:** a complete, demonstrated four-layer autonomy stack (L0 bridge → L1
+perception → L2 autonomy → L3 COP + L4 gate), with the four `video-*` tags as runnable checkpoints
+and `docs/deep-dive.md` as the canonical explanation. It is finished as a portfolio artifact, not
+abandoned mid-sentence — which is the distinction this note exists to make.
+
+**What carries forward:** the Isaac↔WSL bridge recipe and `config/fastdds-loopback.xml`, the
+multi-drone scene and `DroneBackend` seam, the `CoveragePlanner` protocol, the Rerun COP pattern,
+the typed-schema discipline, and — as the new project's Tier-2 mechanism — the conflict-weighted
+Dempster–Shafer fusion from decision `015`.
