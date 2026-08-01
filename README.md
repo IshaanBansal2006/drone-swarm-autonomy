@@ -1,5 +1,12 @@
 # Drone Swarm Autonomy
 
+> **Status: complete and closed (July 2026).** All four layers were built and run end to end
+> against the simulator. The project is not under active development — it was deliberately
+> concluded to pursue a focused research question that came out of it (see
+> [Where this went](#where-this-went)). What is here works, is tested, and is documented; the
+> known limitations are listed honestly in [`docs/backlog.md`](docs/backlog.md) rather than
+> presented as a roadmap.
+
 A multi-agent command-and-control platform for drone swarms, built in simulation.
 
 One operator issues high-level intent — *patrol this area*, *track that object* — and the
@@ -34,14 +41,16 @@ sensors ──▶ L1 fusion ──▶ L2 autonomy ──▶ drones
 
 ## What works today
 
-All four layers are implemented and have been run end-to-end against the simulator.
+All four layers are implemented and were run end to end against the simulator.
 
 **L1 — perception**
 - **Square-root Unscented Kalman Filter** over a 9-D target state (position, velocity, 3-D extent)
 - **Camera and radar observation models** — pinhole projection of an oriented 3-D box; range, azimuth, elevation and Doppler
 - **Probabilistic data association** with χ² gating and a null hypothesis, so tracks coast rather than snapping onto clutter
 - **Dempster-Shafer classification fusion** with conflict-weighted discounting, which represents *ignorance* explicitly rather than forcing a probability
-- **Track lifecycle** — two-point initiation, M-of-N confirmation, coasting, deletion
+- **Track lifecycle** — two-point initiation, age-threshold confirmation, coasting, deletion
+  (confirmation counts cumulative update cycles rather than a true sliding-window M-of-N —
+  one of several simplifications recorded in [`docs/backlog.md`](docs/backlog.md))
 
 **L2 — autonomy**
 - **HTN decomposition** turning intent into primitive, allocatable tasks
@@ -99,13 +108,13 @@ Each tag is self-contained and its test suite passes standalone.
 
 ## Getting started
 
-**Requirements** — Linux or WSL2, Python 3.10+, ROS 2 Humble, and NVIDIA Isaac Sim for the
-simulation itself.
+**Requirements** — Python 3.11+ for the library and tests. The full system additionally needs
+Linux or WSL2, ROS 2 Humble, and NVIDIA Isaac Sim.
 
 ```bash
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
-pytest                                     # 34 tests, no simulator needed
+pytest                                     # 48 tests, no simulator needed
 ```
 
 The estimator, allocator and planners are all exercised by the test suite and the benchmarks
@@ -133,34 +142,59 @@ docs/             decisions, engineering write-ups, the full deep dive
 
 ---
 
-## Where this is going
+## What it doesn't do
 
-The classical stack is the foundation, not the destination. The whole architecture is built
-around a single swappable interface for the decision-making layer — and the plan is to replace
-what sits behind it, in stages:
+Stated plainly, because a system that lists only its features is not describing itself:
 
-1. **Language input** — speech → natural-language intent → the same structured goals the system
-   already executes today.
-2. **Learned control** — a reinforcement-learning policy trained on the same tasks and measured
-   by the same metrics as the classical planner.
-3. **Vision-language-action** — a model that takes what the drones see *and* what the operator
-   says, and produces swarm behaviour end to end, fine-tuned on demonstrations generated in
-   simulation.
+- **Association is PDA, not joint JPDA.** Exact for one target and for non-overlapping gates,
+  which is what the scenes exercise. A joint-event enumerator and a hand-written Hungarian
+  solver were built and tested but never integrated — see decision
+  [`016`](docs/decisions/016-joint-association.md), including why the work stopped.
+- **No tracking metrics.** Accuracy claims here are from live runs against known ground truth,
+  not a MOTA/HOTA harness. There is no multi-target benchmark.
+- **Fixed-rate fusion.** The filter propagates by a constant `dt`; genuinely asynchronous
+  sensors would need a per-measurement timestep.
+- **Extent is biased.** Fixed-viewpoint unobservability plus an unscented-transform envelope
+  effect; diagnosed, quantified, and accepted rather than fixed.
+- **Kinematic drones.** Commanded velocities, not quadrotor dynamics.
 
-Every stage plugs into the same interface, runs the same missions, and is scored the same way.
-That constraint is the reason the message schemas were frozen before a single layer was
-written — without it, none of these approaches could be honestly compared.
+The full list, with the reasoning behind each, is in [`docs/backlog.md`](docs/backlog.md).
 
-Most work on vision-language-action models targets a single robot doing manipulation. Pointing
-one at a *swarm*, inside a structured command-and-control system with a human holding veto, is
-a different and largely unexplored problem — and that's the part this project is built to
-reach.
+---
+
+## Where this went
+
+The architecture was built around swappable interfaces for the decision-making layer, with the
+intent of replacing what sits behind them — language input, then learned control, then a
+vision-language-action model driving the swarm end to end.
+
+Working through that plan produced a sharper question than the platform itself. Classical
+coverage control moves a swarm to match an *importance map*, but that map is conventionally
+hand-specified. A vision-language model can generate it from what the drones see plus a
+natural-language mission — and then the map that guides the swarm is also a map that can be
+wrong, shared over an unreliable radio, and corrupted in a way that misdirects the very
+observations that would correct it.
+
+Measuring that failure loop is a research contribution. Building a larger platform around it is
+not. So this repository was concluded here, and the work continued as a separate, focused
+project.
+
+**Continued in:** [**vlm-swarm-coverage**](https://github.com/IshaanBansal2006/vlm-swarm-coverage)
+— a characterization study of how decentralized, VLM-driven semantic coverage degrades under
+communication and perception faults.
+
+What carried over: the Isaac↔ROS 2 bridge and its DDS transport profile, the multi-drone scene
+and `DroneBackend` seam, the `CoveragePlanner` protocol, the Rerun operating picture, the typed
+message schemas, and the Dempster–Shafer fusion from decision
+[`015`](docs/decisions/015-ds-conflict-and-decision-rule.md). What did not: the tracking stack,
+CBBA, HTN/BT, and the approval gate.
+
+---
 
 ## Status
 
-Actively developed. Steps 0–2 are complete and running: perception, mission autonomy, the
-operator picture and the approval gate. Current work is richer multi-target scenarios,
-evaluation metrics, and the language front-end. Open items are tracked in
-[`docs/backlog.md`](docs/backlog.md).
+**Complete and closed, July 2026.** Every layer described above was implemented and demonstrated
+end to end. No further feature work is planned. Issues and pull requests are welcome but may not
+be answered promptly.
 
 Built by [Ishaan Bansal](https://github.com/IshaanBansal2006).
