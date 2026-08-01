@@ -179,9 +179,8 @@ Measuring that failure loop is a research contribution. Building a larger platfo
 not. So this repository was concluded here, and the work continued as a separate, focused
 project.
 
-**Continued in** a separate project: a characterization study of how decentralized, VLM-driven
-semantic coverage degrades under communication and perception faults. Repository and write-up to
-follow.
+**Continued in:** [**vlm-swarm-coverage**](https://github.com/IshaanBansal2006/vlm-swarm-coverage)
+— a simulation rig for decentralized multi-drone coverage driven by a vision-language model.
 
 What carried over: the Isaac↔ROS 2 bridge and its DDS transport profile, the multi-drone scene
 and `DroneBackend` seam, the `CoveragePlanner` protocol, the Rerun operating picture, the typed
