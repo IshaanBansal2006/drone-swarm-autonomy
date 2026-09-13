@@ -1,11 +1,13 @@
 # Drone Swarm Autonomy
 
-> **Status: complete and closed (July 2026).** All four layers were built and run end to end
-> against the simulator. The project is not under active development — it was deliberately
-> concluded to pursue a focused research question that came out of it (see
-> [Where this went](#where-this-went)). What is here works, is tested, and is documented; the
-> known limitations are listed honestly in [`docs/backlog.md`](docs/backlog.md) rather than
-> presented as a roadmap.
+> **Status: complete, now being extended (September 2026).** All four layers were built and run
+> end to end against the simulator, and the research question that came out of them moved to its
+> own project (see [Where this went](#where-this-went)). The platform reopened for two capability
+> extensions, each shipped under its own tag: **SLAMMOT** — drones estimating their own pose against
+> road-sign and parked-vehicle landmarks instead of reading it from the simulator — and then a
+> **localization-aware allocation score** learned inside CBBA
+> ([`050`](docs/decisions/050-reopen-for-capability-extensions.md)). Known limitations are listed in
+> [`docs/backlog.md`](docs/backlog.md) rather than presented as a roadmap.
 
 A multi-agent command-and-control platform for drone swarms, built in simulation.
 
@@ -80,6 +82,7 @@ context, the options considered, what was chosen, and the consequences. Some wor
 - [`015`](docs/decisions/015-ds-conflict-and-decision-rule.md) — Zadeh's paradox and what to do about it
 - [`021`](docs/decisions/021-allocator.md) — why CBBA over Hungarian assignment
 - [`009`](docs/decisions/009-conclude-platform-pursue-coverage-question.md) — why the project was concluded here rather than continued
+- [`050`](docs/decisions/050-reopen-for-capability-extensions.md) — why it reopened, and what it will and will not claim
 
 Two longer write-ups:
 

@@ -33,19 +33,23 @@ What now flows from this — what's easier, what's harder, what's ruled out.
 | 001 | Sim environment | Accepted (Isaac Sim on Windows + ROS 2 bridge to WSL; Foxy references obsolete after the 20.04→22.04 / Humble migration — see the addendum) |
 | 007 | Sensor modalities | Accepted (radar + EO/IR + lidar, phased, mixed topology, heterogeneous loadouts) |
 | 008 | Project vision and staged build plan | Superseded by 009 from step 3 onward |
-| 009 | Conclude the platform, pursue the coverage question | Accepted (project closed 2026-07-31) |
+| 009 | Conclude the platform, pursue the coverage question | Accepted (closed 2026-07-31; amended by 050) |
 | 010 | State estimator | Accepted (square-root UKF; IMM upgrade path preserved) |
 | 011 | Data association | Accepted (JPDA chosen; PDA shipped — joint layer amended by 016) |
 | 012 | Classification fusion | Accepted (Dempster-Shafer belief functions) |
-| 013 | Observation and sensing | Accepted |
+| 013 | Observation and sensing | Accepted (sensing architecture amended by 017) |
 | 014 | Covariance strategy | Accepted (benchmarked, see `benchmarks/`) |
 | 015 | DS conflict and decision rule | Accepted (conflict-weighted discounting + BetP) |
 | 016 | Joint data association (JPDA) | **Stopped at the pivot** — enumeration and Hungarian built and tested, never integrated |
+| 017 | Sensor placement | Accepted (camera on each drone, radar as a fixed ground station) |
+| 018 | SLAMMOT and landmarks | Accepted (prior-mapped road signs, estimated parked vehicles; sub-decisions open) |
 | 020 | Task decomposer | Accepted (HTN) |
 | 021 | Allocator | Accepted (CBBA) |
 | 022 | Coverage planner | Accepted (Voronoi) |
+| 023 | Learned CBBA path score | Accepted (localization-aware score; sub-decisions open) |
 | 030 | COP viewer and transport | Accepted (Rerun) |
 | 040 | Interface schemas | Accepted (pydantic cross-layer schemas) |
+| 050 | Reopen for capability extensions | Accepted (SLAMMOT, then a learned CBBA score, each under its own tag) |
 
 Numbers 002–006 and 031 were reserved during planning and never written. 002 (roadmap slot),
 003 (success venue) and 004 (category structure) were answered by 008 and then by 009; 005
