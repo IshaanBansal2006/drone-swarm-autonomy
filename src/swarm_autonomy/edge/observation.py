@@ -74,24 +74,55 @@ def _box_corners(x: NDArray[np.float64]) -> NDArray[np.float64]:
     return (Rz @ local.T).T + center  # rotate, then translate to world
 
 
+def _corners_camera(x: NDArray[np.float64], cam: CameraModel) -> NDArray[np.float64]:
+    """The 8 box corners in the camera frame (x right, y down, z forward), shape (8, 3)."""
+    return (cam.R_wc @ (_box_corners(x) - cam.t_w).T).T
+
+
+def _project(
+    corners_c: NDArray[np.float64], z: NDArray[np.float64], cam: CameraModel
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Pinhole perspective divide: camera-frame points -> pixel coordinates (u, v)."""
+    return cam.fx * corners_c[:, 0] / z + cam.cx, cam.fy * corners_c[:, 1] / z + cam.cy
+
+
 def h_camera(x: NDArray[np.float64], cam: CameraModel) -> NDArray[np.float64]:
     """Camera observation model: state -> pixel bbox [u_center, v_center, w, h].
 
     Projects the 8 box corners through the pinhole model and returns the
-    axis-aligned image bounding box (center + pixel width/height).
+    axis-aligned image bounding box (center + pixel width/height). Only valid
+    where `in_view` holds.
     """
-    corners_w = _box_corners(x)  # (8, 3) world
-    corners_c = (cam.R_wc @ (corners_w - cam.t_w).T).T  # world -> camera frame
+    corners_c = _corners_camera(x, cam)
     z = corners_c[:, 2]
-    z = np.where(np.abs(z) < _Z_EPS, _Z_EPS, z)  # guard; assumes target in frustum
+    z = np.where(np.abs(z) < _Z_EPS, _Z_EPS, z)  # numerical guard only; see in_view
 
-    u = cam.fx * corners_c[:, 0] / z + cam.cx
-    v = cam.fy * corners_c[:, 1] / z + cam.cy
+    u, v = _project(corners_c, z, cam)
 
     u_min, u_max = float(u.min()), float(u.max())
     v_min, v_max = float(v.min()), float(v.max())
     return np.array(
         [0.5 * (u_min + u_max), 0.5 * (v_min + v_max), u_max - u_min, v_max - v_min]
+    )
+
+
+def in_view(x: NDArray[np.float64], cam: CameraModel) -> bool:
+    """Whether `h_camera` models what this camera would actually report for `x`.
+
+    Requires every corner in front of the camera and the whole projected box
+    inside the image (decision 017). A corner behind the camera flips sign under
+    the perspective divide, and an edge-truncated detection is narrower than the
+    untruncated box `h_camera` predicts — which the filter would read as the
+    target being farther away. Either would hand the filter a measurement its
+    model cannot explain, so the harness emits no detection instead.
+    """
+    corners_c = _corners_camera(x, cam)
+    z = corners_c[:, 2]
+    if bool(np.any(z <= _Z_EPS)):
+        return False
+    u, v = _project(corners_c, z, cam)
+    return bool(
+        u.min() >= 0.0 and u.max() <= cam.width and v.min() >= 0.0 and v.max() <= cam.height
     )
 
 
