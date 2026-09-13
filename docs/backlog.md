@@ -190,3 +190,23 @@ abandoned mid-sentence — which is the distinction this note exists to make.
 multi-drone scene and `DroneBackend` seam, the `CoveragePlanner` protocol, the Rerun COP pattern,
 the typed-schema discipline, and — as the new project's Tier-2 mechanism — the conflict-weighted
 Dempster–Shafer fusion from decision `015`.
+
+---
+
+## Reopened for capability extensions — 2026-09-13
+
+Recorded as decision [`050`](decisions/050-reopen-for-capability-extensions.md), which amends
+`009`'s "closed to new feature work". The research pivot stands; this is platform work only.
+
+Two extensions, shipped sequentially under their own tags:
+
+1. **SLAMMOT** (`video-4-*`) — the camera moves onto each drone and the radar stays a fixed ground
+   station ([`017`](decisions/017-sensor-placement.md)); drones estimate their own pose against
+   prior-mapped road signs and estimated parked-vehicle landmarks, jointly with the targets they
+   track ([`018`](decisions/018-slammot-and-landmarks.md)). This retires the ground-truth ego-pose
+   assumption stated in `deep-dive.md`.
+2. **Learned CBBA path score** (`video-5-*`) — a localization-aware score replacing `_path_score`,
+   with bundle construction and consensus unchanged ([`023`](decisions/023-learned-cbba-score.md)).
+
+The L1 open items above are still not a plan. They are revisited only where an extension touches
+them.

@@ -3,6 +3,8 @@
 **Status:** Accepted
 **Date:** 2026-07-31 (recorded 2026-09-13)
 **Supersedes:** `008` (project vision and staged build plan), steps 3–5
+**Amended by:** `050` — the repository reopened on 2026-09-13 for two capability extensions; the
+research pivot recorded here stands
 
 ## Context
 

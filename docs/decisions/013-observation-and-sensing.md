@@ -1,6 +1,6 @@
 # 013 — Observation models, sensing architecture, and target state
 
-**Status:** Accepted
+**Status:** Accepted — sensing architecture amended by `017` (radar is ground-based)
 **Date:** 2026-07-27
 
 ## Context
