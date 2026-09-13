@@ -1,6 +1,8 @@
 # 008 — Project vision and staged build plan
 
-**Status:** Accepted
+**Status:** Superseded by `009` from step 3 onward — steps 0–2 were built as described; steps 3–5
+and everything contingent on them (the three-brain ablation, the dynamics ladder past kinematics,
+the hardware track, the compute/data plan) were withdrawn at the 2026-07-31 pivot.
 **Date:** 2026-07-28
 
 ## Vision

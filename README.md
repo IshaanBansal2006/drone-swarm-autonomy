@@ -79,6 +79,7 @@ context, the options considered, what was chosen, and the consequences. Some wor
 - [`014`](docs/decisions/014-covariance-strategy.md) — three covariance strategies, benchmarked
 - [`015`](docs/decisions/015-ds-conflict-and-decision-rule.md) — Zadeh's paradox and what to do about it
 - [`021`](docs/decisions/021-allocator.md) — why CBBA over Hungarian assignment
+- [`009`](docs/decisions/009-conclude-platform-pursue-coverage-question.md) — why the project was concluded here rather than continued
 
 Two longer write-ups:
 
@@ -177,7 +178,8 @@ observations that would correct it.
 
 Measuring that failure loop is a research contribution. Building a larger platform around it is
 not. So this repository was concluded here, and the work continued as a separate, focused
-project.
+project. The full reasoning, the alternatives weighed, and what was withdrawn are recorded in
+decision [`009`](docs/decisions/009-conclude-platform-pursue-coverage-question.md).
 
 **Continued in:** [**vlm-swarm-coverage**](https://github.com/IshaanBansal2006/vlm-swarm-coverage)
 — a simulation rig for decentralized multi-drone coverage driven by a vision-language model.
