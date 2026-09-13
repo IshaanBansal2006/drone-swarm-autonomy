@@ -167,7 +167,9 @@ _Last updated: 2026-07-29 (post thin-slice completion)._
 
 This repository is **closed to new feature work.** The project pivoted to a focused research
 question (decentralized VLM-driven semantic coverage under communication and perception faults),
-whose pipeline contains no multi-object tracking.
+whose pipeline contains no multi-object tracking. Recorded as decision
+[`009`](decisions/009-conclude-platform-pursue-coverage-question.md), which supersedes `008`'s
+steps 3–5.
 
 **What that means for the items above:** the L1 open items (joint JPDA integration, Murty's
 k-best, the multi-target scene, the MOTA/HOTA harness, variable-dt D-B6, angular wrapping,
