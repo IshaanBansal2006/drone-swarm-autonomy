@@ -18,6 +18,11 @@ Documented simplifications (see docs/backlog.md):
     covariance-inflation "spread of innovations" term — optimistic in clutter.
   - Camera poses are per-step inputs (`camera_models`): the platform moves, so
     extrinsics cannot live in config. Fixed radar/lidar poses come from config.
+    A value may be a bare CameraModel (pose taken as exact — the legacy
+    harness) or a MountedCamera (decision 019): the platform's ESTIMATED pose
+    plus its covariance, handled by the Schmidt-Kalman consider update so the
+    pose error widens the innovation and is remembered across cycles via the
+    track's consider_xc block instead of being re-counted as fresh noise.
   - Classification (decisions 012/015/D-B7): per cycle, each sensor's BEST
     associated class-carrying detection contributes a mass function; the cycle's
     masses fuse via conflict-weighted discounting, then Dempster-combine into
@@ -37,6 +42,7 @@ from swarm_autonomy.edge.config import TrackerConfig
 from swarm_autonomy.edge.filters import initial_state, make_filter
 from swarm_autonomy.edge.jpda import JPDA
 from swarm_autonomy.edge.observation import CameraModel, h_camera, h_radar
+from swarm_autonomy.edge.schmidt import ConsiderCamera, MountedCamera, cv_transition
 from swarm_autonomy.edge.types import Detection, Track
 
 log = logging.getLogger(__name__)
@@ -61,14 +67,17 @@ class MultiTargetTracker:
         # sighting for two-point initiation: (position, sim-relative cycle index)
         self._birth_candidates: list[tuple[np.ndarray, int]] = []
         self._cycle = 0
+        self._F = cv_transition(config.ukf.dt, config.ukf.state_dim)
+        self.consider_repairs = 0
 
     # ------------------------------------------------------------------ sensors
-    def _observation_fn(self, sensor_id: str, camera_models: dict[str, CameraModel]):
+    def _observation_fn(self, sensor_id: str,
+                        camera_models: dict[str, CameraModel | MountedCamera]):
         """Bind the sensor's h(x) for this cycle (pose-dependent for cameras)."""
         sensor = self.cfg.sensors[sensor_id]
         if sensor.sensor_type == "camera":
             cam = camera_models.get(sensor_id)
-            if cam is None:
+            if not isinstance(cam, CameraModel):
                 raise ValueError(
                     f"camera '{sensor_id}' has detections but no CameraModel was "
                     f"passed to step() — camera extrinsics are per-step inputs."
@@ -90,7 +99,7 @@ class MultiTargetTracker:
     def step(
         self,
         detections: list[Detection],
-        camera_models: dict[str, CameraModel] | None = None,
+        camera_models: dict[str, CameraModel | MountedCamera] | None = None,
     ) -> list[Track]:
         """One tracker cycle. Returns the CONFIRMED tracks."""
         camera_models = camera_models or {}
@@ -98,6 +107,8 @@ class MultiTargetTracker:
 
         for track in self.tracks:
             track.state = self.filter.predict(track.state)
+            for did in track.consider_xc:  # pose error held constant; target moves
+                track.consider_xc[did] = self._F @ track.consider_xc[did]
 
         by_sensor: dict[str, list[Detection]] = {}
         for det in detections:
@@ -112,12 +123,20 @@ class MultiTargetTracker:
             if sensor is None:
                 log.warning("detections from unknown sensor '%s' ignored", sensor_id)
                 continue
-            h = self._observation_fn(sensor_id, camera_models)
             R = self._R[sensor_id]
+            mounted = camera_models.get(sensor_id)
+            consider = (ConsiderCamera(mounted, R, self.cfg.ukf)
+                        if isinstance(mounted, MountedCamera) else None)
+            h = None if consider else self._observation_fn(sensor_id, camera_models)
             claimed: set[int] = set()  # detection indices gated by ANY track
 
             for track in self.tracks:
-                z_pred, S = self.filter.measurement_prediction(track.state, h, R)
+                if consider is not None:
+                    P_xc = track.consider_xc.setdefault(
+                        mounted.pose.drone_id, np.zeros((self.cfg.ukf.state_dim, 6)))
+                    z_pred, S = consider.measurement_prediction(track.state, P_xc)
+                else:
+                    z_pred, S = self.filter.measurement_prediction(track.state, h, R)
                 gated_idx = self.jpda.gate(dets, z_pred, S, sensor.gate_threshold)
                 claimed.update(gated_idx)
                 if not gated_idx:
@@ -125,7 +144,14 @@ class MultiTargetTracker:
                 gated = [dets[i] for i in gated_idx]
                 betas = self.jpda.compute_association_probabilities(gated, z_pred, S)
                 combined = self.jpda.compute_combined_innovation(gated, betas, z_pred)
-                track.state, _, _ = self.filter.update(track.state, z_pred + combined, h, R)
+                if consider is not None:
+                    track.state, P_xc_new, _, _ = consider.update(
+                        track.state, P_xc, z_pred + combined)
+                    track.consider_xc[mounted.pose.drone_id] = P_xc_new
+                    self.consider_repairs += consider.repairs
+                    consider.repairs = 0
+                else:
+                    track.state, _, _ = self.filter.update(track.state, z_pred + combined, h, R)
                 # only count a real association (not null-dominated) as a hit
                 if betas[1:].sum() > betas[0]:
                     associated_tracks.add(track.track_id)

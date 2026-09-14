@@ -162,13 +162,13 @@ class EgoFilter:
 
     def _factor(self, P: NDArray[np.float64]) -> NDArray[np.float64]:
         try:
-            return np.linalg.cholesky(P)
+            return np.asarray(np.linalg.cholesky(P), dtype=float)
         except np.linalg.LinAlgError:
             self.repairs += 1
             w, V = np.linalg.eigh(0.5 * (P + P.T))
             floor = 1e-12 * max(float(w[-1]), 1.0)
             self.P = (V * np.clip(w, floor, None)) @ V.T
-            return np.linalg.cholesky(self.P)
+            return np.asarray(np.linalg.cholesky(self.P), dtype=float)
 
     # ------------------------------------------------------------ retraction
     def _apply(self, deltas: NDArray[np.float64]) -> dict[str, NDArray[np.float64]]:
@@ -487,11 +487,11 @@ class EgoFilter:
 
     def _factor_of(self, P: NDArray[np.float64]) -> NDArray[np.float64]:
         try:
-            return np.linalg.cholesky(P)
+            return np.asarray(np.linalg.cholesky(P), dtype=float)
         except np.linalg.LinAlgError:
             self.repairs += 1
             w, V = np.linalg.eigh(0.5 * (P + P.T))
-            return np.linalg.cholesky((V * np.clip(w, 1e-12, None)) @ V.T)
+            return np.asarray(np.linalg.cholesky((V * np.clip(w, 1e-12, None)) @ V.T), dtype=float)
 
     def to_msg(self, drone_id: str, t: float) -> DronePoseMsg:
         return DronePoseMsg(drone_id=drone_id, timestamp=t, position=self.p.tolist(),
