@@ -1,7 +1,9 @@
-"""Drone Swarm Autonomy thin-slice scene (Step 0 / Option B).
+"""Drone Swarm Autonomy road scene (Step 0 thin slice, extended for SLAMMOT — decisions 017/018).
 
-Lightweight ground-truth-pose scene: a ground plane, a light, and ONE cube
-("target") that moves at constant velocity. Publishes:
+Ground-truth-pose scene: a ground plane, a light, the road-patrol layout from
+`swarm_autonomy.scene` (prior-mapped road signs and parked vehicles as boxes),
+and ONE vehicle-sized box ("target") driving down the road at constant
+velocity. Publishes:
   - /clock   (sim time)
   - /tf      (ground-truth pose of the target, frame "target" under "world")
 
@@ -18,10 +20,21 @@ Grounded in the shipped examples for Isaac Sim 6.0.1:
 Set HEADLESS=False below if you want to watch it in the GUI.
 """
 
+import os
+import sys
+
 from isaacsim import SimulationApp
 
 HEADLESS = False
 simulation_app = SimulationApp({"headless": HEADLESS})
+
+# The shared scene description (pure dataclasses + numpy; no package install
+# needed under Isaac's bundled Python). Path is relative to this file so the
+# C:\ copy and the WSL original both resolve it.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "src"))
+from swarm_autonomy.scene import demo_scene  # noqa: E402
+
+SCENE = demo_scene()
 
 # Omniverse imports must come AFTER SimulationApp is constructed.
 import numpy as np  # noqa: E402
@@ -54,20 +67,39 @@ GroundPlane("/World/GroundPlane", positions=[0.0, 0.0, 0.0])
 _light = DistantLight("/World/DistantLight")
 _light.set_intensities(300)
 
+def _yaw_quat(yaw):
+    return [float(np.cos(0.5 * yaw)), 0.0, 0.0, float(np.sin(0.5 * yaw))]
+
+
 TARGET_PATH = "/World/target"
-Cube(paths=TARGET_PATH, positions=[0.0, 0.0, 0.5], sizes=1.0, scales=[0.2, 0.2, 0.2])
+Cube(paths=TARGET_PATH, positions=[list(SCENE.target_start)], sizes=1.0,
+     scales=[list(SCENE.target_extent)])
 target = GeomPrim(paths=TARGET_PATH)  # visual-only; we drive its pose kinematically
+
+# Landmarks (decision 018). Colours are NOT rendered here: the measurement
+# synthesiser reads colour from the scene description, not from pixels, so
+# a material is cosmetic for this harness. Sizes and poses ARE what the
+# synthesiser projects, so they must match `scene.py` exactly — hence the import.
+for sign in SCENE.signs:
+    Cube(paths=f"/World/sign_{sign.sign_id}", positions=[list(sign.position)], sizes=1.0,
+         scales=[sign.extent.tolist()], orientations=[_yaw_quat(sign.yaw)])
+    Cube(paths=f"/World/signpost_{sign.sign_id}", sizes=1.0, scales=[0.05, 0.05, sign.position[2]],
+         positions=[[sign.position[0], sign.position[1], sign.position[2] / 2.0]])
+for veh in SCENE.vehicles:
+    Cube(paths=f"/World/vehicle_{veh.vehicle_id}", positions=[list(veh.position)], sizes=1.0,
+         scales=[veh.extent.tolist()], orientations=[_yaw_quat(veh.yaw)])
 
 # Fleet prims (Step 1/2): kinematics run WSL-side in the L2 KinematicBackend
 # (single source of truth); Isaac only RENDERS the poses arriving on
 # /drone_poses. This inverts at the 008 fidelity-ladder upgrade, when real
 # quadrotor dynamics move into the sim. Must match mission_node.FLEET ids.
-DRONE_IDS = ["d0", "d1"]
+DRONE_IDS = sorted(SCENE.fleet)
 drone_prims = {}
-for i, did in enumerate(DRONE_IDS):
+for did in DRONE_IDS:
     path = f"/World/drone_{did}"
-    Cube(paths=path, positions=[-5.0 + 10.0 * i, -5.0, 2.0], sizes=1.0,
-         scales=[0.3, 0.3, 0.1])  # flat slab ~ quad silhouette
+    Cube(paths=path, positions=[list(SCENE.fleet[did].position)], sizes=1.0,
+         scales=[0.3, 0.3, 0.1],  # flat slab ~ quad silhouette
+         orientations=[_yaw_quat(SCENE.fleet[did].yaw)])
     drone_prims[did] = GeomPrim(paths=path)
 
 # --- ROS2 action graph: /clock + /tf(target) -------------------------------
@@ -117,8 +149,9 @@ simulation_app.update()
 # --- Constant-velocity motion (deterministic ground truth) -----------------
 # Motion is gated on the timeline so GUI Pause/Stop actually freezes the cube
 # (an ungated python loop drives the pose regardless of playback state).
-P0 = np.array([0.0, 0.0, 0.5])
-VEL = np.array([0.5, 0.2, 0.0])  # m/s
+P0 = np.array(SCENE.target_start)
+VEL = np.array(SCENE.target_velocity)  # m/s, down the road
+TARGET_QUAT = _yaw_quat(float(np.arctan2(VEL[1], VEL[0])))
 DT = 1.0 / 60.0
 t = 0.0
 timeline = omni.timeline.get_timeline_interface()
@@ -142,7 +175,7 @@ print("[thin_slice] publishing /clock, /tf and /target_pose. Ctrl+C to stop.")
 while simulation_app.is_running():
     if timeline.is_playing():
         pos = P0 + VEL * t
-        target.set_world_poses(positions=[pos.tolist()], orientations=[[1.0, 0.0, 0.0, 0.0]])
+        target.set_world_poses(positions=[pos.tolist()], orientations=[TARGET_QUAT])
         msg = PoseStamped()
         msg.header.frame_id = "world"
         msg.header.stamp.sec = int(t)
