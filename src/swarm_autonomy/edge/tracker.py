@@ -210,8 +210,9 @@ class MultiTargetTracker:
                 vel = (pos - prev_pos) / dt
                 if np.linalg.norm(vel) > BIRTH_MAX_SPEED:
                     continue
-                x0 = np.concatenate([pos, vel, [0.5, 0.5, 0.5]])  # extent prior
-                P0 = np.diag([0.25] * 3 + [1.0] * 3 + [0.25] * 3)
+                x0 = np.concatenate([pos, vel, self.cfg.birth_extent])  # extent prior
+                P0 = np.diag([0.25] * 3 + [1.0] * 3
+                             + list(np.square(np.asarray(self.cfg.birth_extent_std))))
                 self.tracks.append(
                     Track(track_id=self._new_track_id(),
                           state=initial_state(self.filter, x0, P0), age=1)
