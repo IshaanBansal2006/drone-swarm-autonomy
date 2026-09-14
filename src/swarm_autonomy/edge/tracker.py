@@ -75,6 +75,11 @@ class MultiTargetTracker:
         self._cycle = 0
         self._F = cv_transition(config.ukf.dt, config.ukf.state_dim)
         self.consider_repairs = 0
+        # detections that fell inside SOME track's gate on the last step() —
+        # the SLAMMOT pipeline routes the rest to the ego filters as landmark
+        # candidates (a vehicle the tracker has claimed is not a parked car)
+        self.claimed: list[Detection] = []
+        self._pcc_last: dict[str, np.ndarray] = {}  # per drone, the pose cov last seen
 
     # ------------------------------------------------------------------ sensors
     def _observation_fn(self, sensor_id: str,
@@ -93,6 +98,26 @@ class MultiTargetTracker:
             pos = np.asarray(sensor.position or [0.0, 0.0, 0.0])
             return lambda x: h_radar(x, pos)
         raise ValueError(f"unsupported sensor type: {sensor.sensor_type}")
+
+    def _follow_pose_updates(self, camera_models: dict[str, CameraModel | MountedCamera]) -> None:
+        """The ego filter corrected its pose since last cycle (sign fixes); carry
+        each cross-covariance through that correction from the POSE side:
+        P_xc <- P_xc (P_cc_new P_cc_old^-1)^T, the c-side twin of
+        _transport_consider. Leaving P_xx alone is conservative (the target
+        would also have learned from the sign fix through the correlation), so
+        the joint stays PSD; the ego's between-cycle inflation is approximated
+        by the same ratio, which is the slowly-varying-consider assumption of 019."""
+        for cam in camera_models.values():
+            if not isinstance(cam, MountedCamera):
+                continue
+            did, P_new = cam.pose.drone_id, cam.pose.cov
+            P_old = self._pcc_last.get(did)
+            if P_old is not None:
+                T = np.linalg.solve(P_old.T, P_new.T).T  # P_new @ inv(P_old)
+                for track in self.tracks:
+                    if did in track.consider_xc:
+                        track.consider_xc[did] = track.consider_xc[did] @ T.T
+            self._pcc_last[did] = np.array(P_new, copy=True)
 
     @staticmethod
     def _transport_consider(track: Track, P_before: np.ndarray, skip: str | None = None) -> None:
@@ -135,6 +160,7 @@ class MultiTargetTracker:
             track.state = self.filter.predict(track.state)
             for did in track.consider_xc:  # pose error held constant; target moves
                 track.consider_xc[did] = self._F @ track.consider_xc[did]
+        self._follow_pose_updates(camera_models)
 
         by_sensor: dict[str, list[Detection]] = {}
         for det in detections:
@@ -142,6 +168,7 @@ class MultiTargetTracker:
 
         associated_tracks: set[int] = set()
         unassociated_radar: list[Detection] = []
+        self.claimed = []
         cycle_masses: dict[int, list[dict[frozenset[str], float]]] = {}
 
         for sensor_id, dets in by_sensor.items():
@@ -194,6 +221,7 @@ class MultiTargetTracker:
                             )
                         )
 
+            self.claimed.extend(dets[i] for i in sorted(claimed))
             if sensor.sensor_type == "radar":
                 unassociated_radar.extend(d for i, d in enumerate(dets) if i not in claimed)
 

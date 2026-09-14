@@ -94,6 +94,11 @@ so they can be reopened if the reasoning does not hold:
 - Coupled-error accounting stays approximate in one place: the consider block treats ego-pose
   error as constant between tracker cycles rather than propagating its own dynamics. Standard for
   slowly varying consider parameters; stated here so it is not mistaken for exact.
+  *Implementation note (2026-09-13):* the cross-covariance is carried through every update on
+  the target side (radar, other cameras) and through the ego filter's own corrections on the
+  pose side, using the covariance ratio `P_after P_before⁻¹` as the implicit `(I − K H)`. Both
+  were needed to keep the joint covariance positive definite; neither is a change to the
+  decision, only to how it is honoured.
 - Landmark maps are per drone. Sharing them is the first thing to add if drones ever need to agree
   on where a parked vehicle is.
 - The live IMU rate equals whatever rate `/drone_poses` arrives at; the simulator-free harness

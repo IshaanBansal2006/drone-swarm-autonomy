@@ -54,6 +54,22 @@ All four layers are implemented and were run end to end against the simulator.
   (confirmation counts cumulative update cycles rather than a true sliding-window M-of-N —
   one of several simplifications recorded in [`docs/backlog.md`](docs/backlog.md))
 
+**L1 — SLAMMOT extension** (September 2026, tag `video-4-slammot`)
+- **The camera rides the drone**, pitched 30° down; the radar stays a surveyed ground station.
+  Ego pose is no longer read from the simulator — L1 estimates it
+- **Ego-pose error-state UKF** per drone over position, velocity, attitude and IMU biases,
+  driven by a simulated strapdown IMU (bias random walk + white noise)
+- **Prior-mapped road signs** as range-giving fixes (standard size → range from apparent width)
+- **Parked vehicles of varying size and colour** mapped as landmarks by delayed two-view
+  triangulation with a static-consistency check; the moving target is refused
+- **Schmidt–Kalman consider update** in the tracker, so target estimates carry each observing
+  drone's pose uncertainty and repeated looks through one uncertain camera are not counted as
+  independent evidence
+- Measured simulator-free, two drones, 20 s down the road (`tests/test_pipeline.py`):
+  **0.06–0.15 m mean ego position error, 0.2–0.3° heading**, all four parked vehicles mapped by
+  both drones (0.1–1.1 m), the moving car tracked to **0.25 m through estimated camera poses**,
+  accelerometer bias error cut by 3–5×, zero covariance repairs in either estimator
+
 **L2 — autonomy**
 - **HTN decomposition** turning intent into primitive, allocatable tasks
 - **CBBA** — a decentralised bundle auction with consensus and bundle truncation
@@ -80,6 +96,7 @@ context, the options considered, what was chosen, and the consequences. Some wor
 - [`013`](docs/decisions/013-observation-and-sensing.md) — how the scale–depth ambiguity shaped the sensor architecture
 - [`014`](docs/decisions/014-covariance-strategy.md) — three covariance strategies, benchmarked
 - [`015`](docs/decisions/015-ds-conflict-and-decision-rule.md) — Zadeh's paradox and what to do about it
+- [`019`](docs/decisions/019-ego-pose-estimation.md) — 6-DoF ego state, camera mount, the decoupled Schmidt–Kalman architecture, simulated IMU
 - [`021`](docs/decisions/021-allocator.md) — why CBBA over Hungarian assignment
 - [`009`](docs/decisions/009-conclude-platform-pursue-coverage-question.md) — why the project was concluded here rather than continued
 - [`050`](docs/decisions/050-reopen-for-capability-extensions.md) — why it reopened, and what it will and will not claim
@@ -104,6 +121,7 @@ git checkout video-0-bridge       # simulator ↔ ROS 2 bridge only
 git checkout video-1-perception   # + the estimation stack
 git checkout video-2-autonomy     # + planning, allocation, drones flying
 git checkout video-3-full-stack   # + operating picture and approval gate
+git checkout video-4-slammot      # + ego-pose SLAM, landmarks, consider tracker
 ```
 
 Each tag is self-contained and its test suite passes standalone.
@@ -118,7 +136,7 @@ Linux or WSL2, ROS 2 Humble, and NVIDIA Isaac Sim.
 ```bash
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev]"
-pytest                                     # 48 tests, no simulator needed
+pytest                                     # no simulator needed (~1 min)
 ```
 
 The estimator, allocator and planners are all exercised by the test suite and the benchmarks
@@ -134,7 +152,10 @@ To run the full system, start the simulation scene, then the layer nodes — the
 ```
 src/swarm_autonomy/
   schemas.py      cross-layer message definitions
-  edge/           L1 — filters, observation models, association, classification, tracking
+  scene.py        the shared demo world — signs, parked vehicles, fleet, target, radar
+  edge/           L1 — filters, observation models, association, classification, tracking;
+                  ego.py (ego-pose SLAM), imu.py, sensing.py, schmidt.py (consider update),
+                  pipeline.py (SLAMMOT routing), rotation.py
   autonomy/       L2 — world state, decomposition, coverage, allocation, execution
   cop/            L3 — operating picture and operator console
   hol/            L4 — approval gate

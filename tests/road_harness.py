@@ -12,9 +12,10 @@ import numpy as np
 from swarm_autonomy.autonomy.executor import SmoothBackend
 from swarm_autonomy.autonomy.world_state import DroneState, WorldState
 from swarm_autonomy.edge import rotation
-from swarm_autonomy.edge.config import CameraConfig, ImuConfig, RadarConfig, TrackerConfig
+from swarm_autonomy.edge.config import ImuConfig
 from swarm_autonomy.edge.imu import ImuSample, ImuSynthesizer
 from swarm_autonomy.edge.observation import CameraModel
+from swarm_autonomy.edge.pipeline import road_config
 from swarm_autonomy.edge.sensing import MeasurementSynthesizer, PlatformTruth, TargetTruth
 from swarm_autonomy.edge.types import Detection
 from swarm_autonomy.scene import Scene, demo_scene
@@ -32,14 +33,6 @@ class Frame:
     target: TargetTruth
 
 
-def road_tracker_config(drone_ids: list[str], scene: Scene) -> TrackerConfig:
-    sensors: dict = {f"cam_{d}": CameraConfig(platform=d) for d in drone_ids}
-    sensors["radar_gs"] = RadarConfig(position=list(scene.radar_position))
-    # vehicle-class birth prior: the only target in this scene is a car
-    return TrackerConfig(sensors=sensors, birth_extent=[4.5, 1.85, 1.7],
-                         birth_extent_std=[1.0, 0.4, 0.5])
-
-
 class RoadFlight:
     """Fly `waypoints` per drone; yield one Frame per fusion cycle."""
 
@@ -49,7 +42,7 @@ class RoadFlight:
         self.scene = scene or demo_scene()
         self.drone_ids = drone_ids or ["d0"]
         self.imu_cfg = imu_cfg or ImuConfig()
-        self.cfg = road_tracker_config(self.drone_ids, self.scene)
+        self.cfg = road_config(self.scene, self.drone_ids)
         self.rng = np.random.default_rng(seed)
         self.world = WorldState()
         for did in self.drone_ids:

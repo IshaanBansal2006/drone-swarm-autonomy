@@ -298,9 +298,11 @@ observation models as the sensor pose.
 | Count | one per target | one per platform |
 | Appears as | `x` in the filter | `CameraModel.R_wc/t_w`, `h_radar(sensor_pos)` |
 
-*(Caveat: treating ego-pose as perfectly known is an approximation. If drone position is
-uncertain, that uncertainty should inflate `R` or be jointly estimated — SLAM-style. We assume
-good onboard nav.)*
+*(This was written when ego pose was read from the simulator. Since the SLAMMOT extension
+(decisions `017`–`019`, tag `video-4-slammot`) the drone's pose is an estimate from
+`edge/ego.py` with a covariance, and the tracker consumes it through a Schmidt–Kalman consider
+update (`edge/schmidt.py`) rather than as a known input. The radar's position is still
+surveyed. See the decision docs; the mechanism is not re-derived here.)*
 
 ### The 9-D layout (decision `013`)
 

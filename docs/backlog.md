@@ -210,3 +210,26 @@ Two extensions, shipped sequentially under their own tags:
 
 The L1 open items above are still not a plan. They are revisited only where an extension touches
 them.
+
+**SLAMMOT delivered (2026-09-13, tag `video-4-slammot`)** — `edge/rotation.py`, `scene.py`,
+`edge/imu.py`, `edge/sensing.py`, `edge/ego.py`, `edge/schmidt.py`, `edge/pipeline.py`, the
+rewritten L1 node, the road scene, and the `SmoothBackend`. Simulator-free end to end
+(`tests/test_pipeline.py`). Known limits, recorded rather than planned:
+
+- **Landmark maps are per drone.** Two drones can map the same parked car twice; nothing shares
+  or merges them.
+- **The bearings-only static check is weak against radial motion.** A car receding straight
+  ahead changes bearing slowly; the ground-plane and span guards catch the cases seen so far,
+  and the radar-initiated tracker claims the target first, but there is no proof for the
+  general case.
+- **Consider blocks approximate the pose-side dynamics.** The cross-covariance is carried
+  through updates on both sides (`_transport_consider`, `_follow_pose_updates`) but the
+  target does not learn from sign fixes through the correlation, and between-cycle IMU inflation
+  is folded into the update ratio. Conservative; not exact.
+- **The landmark's initial cross-covariance with the pose is zero** (marginal inflated instead).
+- **Live IMU rate equals L2's 10 Hz tick**; the harness uses 100 Hz.
+- **The Isaac scene edits are unverified** — the simulator runs on the Windows host, outside
+  this session. Prim construction only; first run should confirm the landmarks appear.
+- **Colours are read from the scene description**, not rendered or detected.
+- **`consider_xc` is not published** on the wire; the operating picture shows the ego
+  ellipsoid but not the target's dependence on it.
