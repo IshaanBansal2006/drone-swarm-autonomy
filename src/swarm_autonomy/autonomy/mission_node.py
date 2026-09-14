@@ -38,7 +38,10 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
+from pathlib import Path
+
 from swarm_autonomy.autonomy.allocator import CBBAAllocator
+from swarm_autonomy.autonomy.learned_score import LearnedScore
 from swarm_autonomy.autonomy.coverage import VoronoiCoverage
 from swarm_autonomy.autonomy.decomposer import HTNDecomposer, Task
 from swarm_autonomy.autonomy.executor import Executor, SmoothBackend
@@ -57,6 +60,7 @@ TICK_DT = 0.1  # control cycle (s)
 ENGAGE_RANGE = 3.0  # m — follower proximity that triggers a proposal
 
 SCENE = demo_scene()
+LEARNED_SCORE_PATH = Path(__file__).resolve().parents[3] / "config" / "learned_score.json"
 FLEET = [  # start poses come from the shared scene (decision 019)
     DroneState(drone_id=did, position=list(start.position),
                orientation=rotation.from_yaw(start.yaw).tolist(),
@@ -72,7 +76,13 @@ class MissionNode(Node):
         for d in FLEET:
             self.world.update_drone(d)
         self.decomposer = HTNDecomposer(coverage=VoronoiCoverage())
-        self.allocator = CBBAAllocator()
+        weights = LEARNED_SCORE_PATH
+        if weights.exists():  # decision 024: localization-aware score when trained
+            self.allocator = CBBAAllocator(score=LearnedScore.from_json(weights, SCENE.signs))
+            self.get_logger().info(f"CBBA scoring with learned score {weights}")
+        else:
+            self.allocator = CBBAAllocator()
+            self.get_logger().info("CBBA scoring with the time-discounted baseline")
         self.backend = SmoothBackend(self.world)
         self.task_executor = Executor(self.backend, self.world)
 

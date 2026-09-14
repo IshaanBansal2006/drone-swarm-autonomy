@@ -47,7 +47,8 @@ What now flows from this — what's easier, what's harder, what's ruled out.
 | 020 | Task decomposer | Accepted (HTN) |
 | 021 | Allocator | Accepted (CBBA) |
 | 022 | Coverage planner | Accepted (Voronoi) |
-| 023 | Learned CBBA path score | Accepted (localization-aware score; sub-decisions open) |
+| 023 | Learned CBBA path score | Accepted (localization-aware score) |
+| 024 | Learned score training | Accepted (no DMG constraint; approximate policy iteration; counterfactual credit vs previous iterate; quality-weighted return) |
 | 030 | COP viewer and transport | Accepted (Rerun) |
 | 040 | Interface schemas | Accepted (pydantic cross-layer schemas; amended by 041) |
 | 041 | Drone pose schema | Accepted (one DronePoseMsg for truth and estimate; 6×6 sqrt-cov factor) |

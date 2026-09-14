@@ -11,7 +11,12 @@ Two alternating phases per round:
 
 Rounds repeat until nothing changes. Scores are time-discounted rewards
 S = lambda^tau * reward (tau = arrival time along the drone's path), which are
-diminishing-marginal-gain — the property CBBA's convergence guarantee needs.
+diminishing-marginal-gain — the property CBBA's convergence guarantee needs —
+when tasks are APPENDED. With best-position insertion (what phase 1 does) a
+task already in the path can be a paid-for detour into a neighbour's area
+and RAISE that neighbour's marginal gain; tests/test_learned_score.py pins a
+minority of random cases doing exactly that. The guarantee was therefore
+never strict here; the round cap is what ends the auction (decision 024).
 
 Documented simplification (backlog): fully-connected synchronous communication,
 so consensus is a global max per task each round. The full Choi conflict-
@@ -23,6 +28,7 @@ realistic. Convergence bound: <= N_tasks rounds under full connectivity.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Protocol
 
 import numpy as np
 
@@ -69,7 +75,38 @@ def _capable(drone: DroneState, task: Task) -> bool:
     return task.required_capability is None or task.required_capability in drone.capabilities
 
 
+class PathScore(Protocol):
+    """The 023 seam: what a drone bids for an ordered path of tasks."""
+
+    def score(self, drone: DroneState, path: list[Task]) -> float: ...
+
+
+class TimeDiscountedScore:
+    """The hand-written score: sum of lambda^arrival * reward. Diminishing
+    marginal gain by construction, which is what CBBA's convergence proof needs."""
+
+    def score(self, drone: DroneState, path: list[Task]) -> float:
+        return _path_score(_Agent(drone=drone), path)
+
+
 class CBBAAllocator:
+    """Bundle build + consensus (021). The SCORE is pluggable (023): the
+    default is the time-discounted hand-written one; a learned score may be
+    substituted per drone. With a score that is not diminishing-marginal-gain
+    the convergence proof no longer applies — `last_converged` records whether
+    the auction settled before the round cap, so a caller can measure how
+    often it did."""
+
+    def __init__(self, score: PathScore | None = None,
+                 score_overrides: dict[str, PathScore] | None = None) -> None:
+        self.score = score if score is not None else TimeDiscountedScore()
+        self.score_overrides = dict(score_overrides or {})
+        self.last_rounds = 0
+        self.last_converged = True
+
+    def score_for(self, drone_id: str) -> PathScore:
+        return self.score_overrides.get(drone_id, self.score)
+
     def allocate(self, tasks: list[Task], drones: list[DroneState],
                  max_rounds: int | None = None) -> dict[str, list[Task]]:
         """Returns drone_id -> ordered task path. Unallocatable tasks are absent
@@ -81,21 +118,25 @@ class CBBAAllocator:
         bids: dict[str, float] = {t.task_id: 0.0 for t in tasks}
         winners: dict[str, str | None] = {t.task_id: None for t in tasks}
         by_id = {t.task_id: t for t in tasks}
+        cap = max_rounds or len(tasks) + 1
+        self.last_converged = False
 
-        for _ in range(max_rounds or len(tasks) + 1):
+        for rnd in range(cap):
+            self.last_rounds = rnd + 1
             changed = False
             # -- phase 1: bundle building --------------------------------
             for aid in sorted(agents):
                 agent = agents[aid]
+                scorer = self.score_for(aid)
                 while len(agent.path) < MAX_BUNDLE:
                     best = None  # (marginal, insert_pos, task)
-                    base = _path_score(agent, agent.path)
+                    base = scorer.score(agent.drone, agent.path)
                     for task in tasks:
                         if task in agent.path or not _capable(agent.drone, task):
                             continue
                         for pos in range(len(agent.path) + 1):
                             trial = agent.path[:pos] + [task] + agent.path[pos:]
-                            marginal = _path_score(agent, trial) - base
+                            marginal = scorer.score(agent.drone, trial) - base
                             if marginal > bids[task.task_id] + 1e-12 and (
                                 best is None or marginal > best[0]
                             ):
@@ -121,6 +162,7 @@ class CBBAAllocator:
                         changed = True
                         break
             if not changed:
+                self.last_converged = True
                 break
 
         return {aid: list(agents[aid].path) for aid in agents}

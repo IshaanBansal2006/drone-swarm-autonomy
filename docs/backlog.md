@@ -233,3 +233,23 @@ rewritten L1 node, the road scene, and the `SmoothBackend`. Simulator-free end t
 - **Colours are read from the scene description**, not rendered or detected.
 - **`consider_xc` is not published** on the wire; the operating picture shows the ego
   ellipsoid but not the target's dependence on it.
+
+**Learned CBBA score delivered (2026-09-13, tag `video-5-learned-score`)** —
+`autonomy/learned_score.py`, `autonomy/training.py`, `benchmarks/learned_score.py`, the
+pluggable `PathScore` seam in `autonomy/allocator.py`, and `config/learned_score.json` (trained
+weights + report). Known limits:
+
+- **The advantage is linear in seven hand-picked features**, and the localization predictor
+  behind them is a heuristic (linear drift, sign-range reset, no field of view). Enough to carry
+  the signal; not a model of the ego filter.
+- **Rollouts allocate once and never replan**; the live mission node replans on new intents and
+  task failures, which training never sees.
+- **Rollouts skip vehicle landmarks and the tracker** — the return depends on neither, but the
+  live system's ego covariance is shaped by both.
+- **Convergence is measured, not proven**, for the classical score too: best-position insertion
+  already violates diminishing marginal gain in a minority of cases (decision 024, "found while
+  implementing"); the round cap is what ends the auction.
+- **Training budget is small** (8 missions × 4 iterations, 60 s each); the held-out numbers in
+  the report have the variance of four missions.
+- **The counterfactual credit uses the previous iterate**; the classical score is evaluated
+  alongside for reporting only.

@@ -1,0 +1,69 @@
+{
+  "config": {
+    "n_tasks": 6,
+    "horizon_s": 60.0,
+    "speed": 4.0,
+    "imu_rate_hz": 50.0,
+    "train_missions": 8,
+    "holdout_missions": 4,
+    "max_iters": 4,
+    "ridge": 1.0,
+    "min_improvement": 0.0,
+    "min_convergence_rate": 0.8,
+    "explore_std": 0.1,
+    "s0": 1.0,
+    "task_altitude": 4.0,
+    "seed": 0
+  },
+  "wall_s": 104.5,
+  "report": {
+    "iterations": [
+      {
+        "iteration": 1,
+        "weights": [
+          -0.020260518874650982,
+          -0.12785955111397646,
+          0.34132722157321327,
+          0.02698904169590198,
+          -0.1958007226547325,
+          -0.0644893139560928,
+          0.06816256563406237
+        ],
+        "train_return": 8.008382707287678,
+        "holdout_return": 7.59732056454781,
+        "holdout_return_previous": 7.586771999281298,
+        "holdout_return_classical": 7.586771999281298,
+        "convergence_rate": 1.0,
+        "n_samples": 16
+      },
+      {
+        "iteration": 2,
+        "weights": [
+          7.794679851470115e-05,
+          -0.3836749328447282,
+          0.3611327083606218,
+          0.046794528483310484,
+          -0.08405303542958423,
+          0.12768488864619443,
+          0.06836595029079402
+        ],
+        "train_return": 8.008382707287678,
+        "holdout_return": 7.5911803391358115,
+        "holdout_return_previous": 7.59732056454781,
+        "holdout_return_classical": 7.586771999281298,
+        "convergence_rate": 1.0,
+        "n_samples": 16
+      }
+    ],
+    "stopped_because": "no held-out improvement over the previous iterate",
+    "feature_names": [
+      "bias",
+      "baseline",
+      "min_quality",
+      "mean_quality",
+      "sign_passes",
+      "path_length_100m",
+      "init_var"
+    ]
+  }
+}

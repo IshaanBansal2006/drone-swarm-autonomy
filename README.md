@@ -76,6 +76,25 @@ All four layers are implemented and were run end to end against the simulator.
 - **Voronoi coverage planning** for area scans
 - **Behaviour trees** for reactive execution, ticked at 10 Hz
 
+**L2 — learned allocation score** (September 2026, tag `video-5-learned-score`)
+- CBBA's path score is pluggable; the shipped alternative is **localization-aware**: the
+  hand-written time-discounted score plus a learned linear advantage over features from an
+  allocation-time predictor of how well each drone will stay localised along its route (drift
+  with distance, reset near a mapped sign)
+- Trained by **approximate policy iteration on counterfactual credit** — each drone's marginal
+  contribution to the mission return, measured against the previous iterate under common random
+  numbers — with the return being task rewards weighted by localization quality at completion
+- Convergence is **measured, not assumed**: with a score that is not diminishing-marginal-gain
+  CBBA's proof does not apply, so every iteration reports the fraction of auctions that settled
+  before the round cap. (Building this found that best-position insertion already violates the
+  property in a minority of cases — the classical allocator never had it strictly either)
+- **Measured result, stated plainly** (`config/learned_score_report.json`, 8 training and 4
+  held-out missions of 60 s, 2 iterations before the stopping rule): held-out return **7.60 vs
+  7.59** for the classical score — a 0.1% difference, inside the noise of four missions — with
+  **100% of auctions converging** before the round cap. On this scene the road is dense with
+  signs, so almost every route is well localised and there is little for the score to buy. The
+  extension delivers the mechanism and its measurement, not an improvement
+
 **L3 / L4**
 - Live 3-D operating picture with a scrubbable timeline
 - Approval gate whose defining property is that **silence never authorises** — an unanswered
@@ -98,6 +117,7 @@ context, the options considered, what was chosen, and the consequences. Some wor
 - [`015`](docs/decisions/015-ds-conflict-and-decision-rule.md) — Zadeh's paradox and what to do about it
 - [`019`](docs/decisions/019-ego-pose-estimation.md) — 6-DoF ego state, camera mount, the decoupled Schmidt–Kalman architecture, simulated IMU
 - [`021`](docs/decisions/021-allocator.md) — why CBBA over Hungarian assignment
+- [`024`](docs/decisions/024-learned-score-training.md) — training a learned bid: counterfactual credit, policy iteration, and what happens to CBBA's convergence guarantee
 - [`009`](docs/decisions/009-conclude-platform-pursue-coverage-question.md) — why the project was concluded here rather than continued
 - [`050`](docs/decisions/050-reopen-for-capability-extensions.md) — why it reopened, and what it will and will not claim
 
@@ -122,6 +142,7 @@ git checkout video-1-perception   # + the estimation stack
 git checkout video-2-autonomy     # + planning, allocation, drones flying
 git checkout video-3-full-stack   # + operating picture and approval gate
 git checkout video-4-slammot      # + ego-pose SLAM, landmarks, consider tracker
+git checkout video-5-learned-score # + localization-aware CBBA score, trained
 ```
 
 Each tag is self-contained and its test suite passes standalone.
@@ -156,12 +177,13 @@ src/swarm_autonomy/
   edge/           L1 — filters, observation models, association, classification, tracking;
                   ego.py (ego-pose SLAM), imu.py, sensing.py, schmidt.py (consider update),
                   pipeline.py (SLAMMOT routing), rotation.py
-  autonomy/       L2 — world state, decomposition, coverage, allocation, execution
+  autonomy/       L2 — world state, decomposition, coverage, allocation, execution;
+                  learned_score.py (localization-aware bid), training.py (policy iteration)
+config/           DDS transport profile; trained learned-score weights + training report
   cop/            L3 — operating picture and operator console
   hol/            L4 — approval gate
 sim/scenes/       simulator scenes
-config/           DDS transport profile for the simulator boundary
-benchmarks/       covariance strategy comparison, filter consistency sweep
+benchmarks/       covariance strategy comparison, filter consistency sweep, learned-score training
 docs/             decisions, engineering write-ups, the full deep dive
 ```
 
