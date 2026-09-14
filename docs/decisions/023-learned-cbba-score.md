@@ -1,6 +1,6 @@
 # 023 — Learned path score inside CBBA
 
-**Status:** Accepted — open sub-decisions listed under Consequences
+**Status:** Accepted — the sub-decisions listed under Consequences are resolved in `024`
 **Date:** 2026-09-13
 
 ## Context

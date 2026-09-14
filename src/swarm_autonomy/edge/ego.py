@@ -50,7 +50,7 @@ from numpy.typing import NDArray
 from swarm_autonomy.edge import rotation
 from swarm_autonomy.edge.config import CHI2_95, CameraConfig, EgoConfig
 from swarm_autonomy.edge.imu import ImuSample, integrate
-from swarm_autonomy.edge.observation import CameraModel, h_camera_box, in_view_box
+from swarm_autonomy.edge.observation import _CORNER_SIGNS, CameraModel, box_corners, in_view_box
 from swarm_autonomy.edge.sensing import mount_rotation
 from swarm_autonomy.edge.types import Detection
 from swarm_autonomy.scene import SIGN_EXTENTS, Sign
@@ -240,16 +240,27 @@ class EgoFilter:
         yaw: float | None, lm_index: int | None,
     ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
         """Predicted bbox, its covariance (without R) and the error/measurement
-        cross-covariance for a box that is either fixed (sign) or landmark k."""
+        cross-covariance for a box that is either fixed (sign) or landmark k.
+
+        Vectorised over the sigma set: one camera per sigma point, all boxes
+        projected in a single einsum. The per-point Python loop this replaced
+        was 90% of a training rollout (profiled 2026-09-13)."""
         m = deltas.shape[0]
-        Z = np.zeros((m, 4))
-        for i in range(m):
-            cam = self._camera_at(st["p"][i], st["q"][i], R_bc, cfg)
-            if lm_index is None:
-                Z[i] = h_camera_box(center, extent, yaw, cam)  # type: ignore[arg-type]
-            else:
-                Z[i] = h_camera_box(st[f"lp{lm_index}"][i], st[f"lL{lm_index}"][i],
-                                    float(st[f"ly{lm_index}"][i]), cam)
+        R_wb = rotation.to_matrix(st["q"])  # (m, 3, 3)
+        R_wc = np.transpose(R_wb @ R_bc, (0, 2, 1))  # world -> camera, per sigma
+        t_w = st["p"] + R_wb @ np.asarray(cfg.mount.offset, dtype=float)  # (m, 3)
+        if lm_index is None:
+            corners_w = np.broadcast_to(box_corners(center, extent, yaw), (m, 8, 3))  # type: ignore[arg-type]
+        else:
+            corners_w = _box_corners_batch(st[f"lp{lm_index}"], st[f"lL{lm_index}"],
+                                           st[f"ly{lm_index}"])
+        corners_c = np.einsum("mij,mkj->mki", R_wc, corners_w - t_w[:, None, :])  # (m, 8, 3)
+        z = corners_c[:, :, 2]
+        z = np.where(np.abs(z) < 1e-6, 1e-6, z)
+        u = cfg.fx * corners_c[:, :, 0] / z + cfg.cx
+        v = cfg.fy * corners_c[:, :, 1] / z + cfg.cy
+        u_min, u_max, v_min, v_max = u.min(1), u.max(1), v.min(1), v.max(1)
+        Z = np.stack([0.5 * (u_min + u_max), 0.5 * (v_min + v_max), u_max - u_min, v_max - v_min], 1)
         _, Wm, Wc = self._weights(self.n)
         z_bar = Wm @ Z
         dz = Z - z_bar
@@ -501,6 +512,17 @@ class EgoFilter:
     def landmark_cov(self, k: int) -> NDArray[np.float64]:
         o = POSE_DIM + LM_DIM * k
         return np.asarray(self.P[o:o + LM_DIM, o:o + LM_DIM])
+
+
+def _box_corners_batch(center: NDArray[np.float64], extent: NDArray[np.float64],
+                       yaw: NDArray[np.float64]) -> NDArray[np.float64]:
+    """box_corners for a batch: centres (m,3), extents (m,3), yaws (m,) -> (m, 8, 3)."""
+    c, s = np.cos(yaw), np.sin(yaw)
+    zeros, ones = np.zeros_like(c), np.ones_like(c)
+    Rz = np.stack([np.stack([c, -s, zeros], -1), np.stack([s, c, zeros], -1),
+                   np.stack([zeros, zeros, ones], -1)], -2)  # (m, 3, 3)
+    local = _CORNER_SIGNS[None, :, :] * (extent[:, None, :] / 2.0)  # (m, 8, 3)
+    return np.asarray(np.einsum("mij,mkj->mki", Rz, local) + center[:, None, :], dtype=float)
 
 
 def _triangulate(o1: NDArray[np.float64], r1: NDArray[np.float64],
