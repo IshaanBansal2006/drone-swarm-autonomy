@@ -76,6 +76,11 @@ so they can be reopened if the reasoning does not hold:
   shortcut. Neither was chosen.
 - **The prior map is exact**, with a configurable inflation of sign-measurement noise standing
   in for map error. Surveying belongs to another project.
+- **Covariance form, not square-root, for the ego filter.** `014` chose the square-root form
+  for the target tracker, whose state never changes size. The ego state grows and shrinks as
+  vehicle landmarks are added and dropped, which is a block append or a row/column deletion on a
+  covariance and a re-factorisation on a factor. Covariance form with the same eigenvalue-floored
+  repair (and the same `repairs` counter) is the pragmatic choice; the tests assert zero repairs.
 - **An acceleration- and yaw-rate-limited backend** (`SmoothBackend`) replaces the snap-to-speed
   kinematic backend wherever an IMU is synthesised, and keeps the platform level. It implements
   the same `DroneBackend` Protocol, so nothing above the seam changes.
