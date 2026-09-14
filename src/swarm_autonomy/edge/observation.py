@@ -56,27 +56,39 @@ def _object_yaw(x: NDArray[np.float64]) -> float:
     return float(np.arctan2(vy, vx))
 
 
-def _box_corners(x: NDArray[np.float64]) -> NDArray[np.float64]:
-    """The 8 world-frame corners of the upright, yaw-rotated 3-D box, shape (8, 3).
+_CORNER_SIGNS = np.array(
+    [[sx, sy, sz] for sx in (-1.0, 1.0) for sy in (-1.0, 1.0) for sz in (-1.0, 1.0)]
+)
+
+
+def box_corners(
+    center: NDArray[np.float64], extent: NDArray[np.float64], yaw: float
+) -> NDArray[np.float64]:
+    """The 8 world-frame corners of an upright box, shape (8, 3).
 
     Upright assumption: rotation is only about world-z by yaw (roll/pitch ~ 0).
+    Shared by targets (yaw from velocity) and landmarks (yaw is a state or a
+    map constant, decision 018).
     """
-    center = x[0:3]
-    half = x[6:9] / 2.0
-    yaw = _object_yaw(x)
     c, s = np.cos(yaw), np.sin(yaw)
     Rz = np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
+    local = _CORNER_SIGNS * (np.asarray(extent, dtype=float) / 2.0)  # object frame
+    return np.asarray((Rz @ local.T).T + np.asarray(center, dtype=float))  # rotate, translate
 
-    signs = np.array(
-        [[sx, sy, sz] for sx in (-1.0, 1.0) for sy in (-1.0, 1.0) for sz in (-1.0, 1.0)]
-    )
-    local = signs * half  # (8, 3) corner offsets in the object frame
-    return (Rz @ local.T).T + center  # rotate, then translate to world
+
+def _box_corners(x: NDArray[np.float64]) -> NDArray[np.float64]:
+    """Corners of the 9-D target state's box (yaw from velocity, option A)."""
+    return box_corners(x[0:3], x[6:9], _object_yaw(x))
+
+
+def _to_camera(corners_w: NDArray[np.float64], cam: CameraModel) -> NDArray[np.float64]:
+    """World points -> camera frame (x right, y down, z forward)."""
+    return (cam.R_wc @ (corners_w - cam.t_w).T).T
 
 
 def _corners_camera(x: NDArray[np.float64], cam: CameraModel) -> NDArray[np.float64]:
     """The 8 box corners in the camera frame (x right, y down, z forward), shape (8, 3)."""
-    return (cam.R_wc @ (_box_corners(x) - cam.t_w).T).T
+    return _to_camera(_box_corners(x), cam)
 
 
 def _project(
@@ -86,6 +98,27 @@ def _project(
     return cam.fx * corners_c[:, 0] / z + cam.cx, cam.fy * corners_c[:, 1] / z + cam.cy
 
 
+def _bbox_of(corners_c: NDArray[np.float64], cam: CameraModel) -> NDArray[np.float64]:
+    z = corners_c[:, 2]
+    z = np.where(np.abs(z) < _Z_EPS, _Z_EPS, z)  # numerical guard only; see in_view
+    u, v = _project(corners_c, z, cam)
+    u_min, u_max = float(u.min()), float(u.max())
+    v_min, v_max = float(v.min()), float(v.max())
+    return np.array(
+        [0.5 * (u_min + u_max), 0.5 * (v_min + v_max), u_max - u_min, v_max - v_min]
+    )
+
+
+def _visible(corners_c: NDArray[np.float64], cam: CameraModel) -> bool:
+    z = corners_c[:, 2]
+    if bool(np.any(z <= _Z_EPS)):
+        return False
+    u, v = _project(corners_c, z, cam)
+    return bool(
+        u.min() >= 0.0 and u.max() <= cam.width and v.min() >= 0.0 and v.max() <= cam.height
+    )
+
+
 def h_camera(x: NDArray[np.float64], cam: CameraModel) -> NDArray[np.float64]:
     """Camera observation model: state -> pixel bbox [u_center, v_center, w, h].
 
@@ -93,17 +126,14 @@ def h_camera(x: NDArray[np.float64], cam: CameraModel) -> NDArray[np.float64]:
     axis-aligned image bounding box (center + pixel width/height). Only valid
     where `in_view` holds.
     """
-    corners_c = _corners_camera(x, cam)
-    z = corners_c[:, 2]
-    z = np.where(np.abs(z) < _Z_EPS, _Z_EPS, z)  # numerical guard only; see in_view
+    return _bbox_of(_corners_camera(x, cam), cam)
 
-    u, v = _project(corners_c, z, cam)
 
-    u_min, u_max = float(u.min()), float(u.max())
-    v_min, v_max = float(v.min()), float(v.max())
-    return np.array(
-        [0.5 * (u_min + u_max), 0.5 * (v_min + v_max), u_max - u_min, v_max - v_min]
-    )
+def h_camera_box(
+    center: NDArray[np.float64], extent: NDArray[np.float64], yaw: float, cam: CameraModel
+) -> NDArray[np.float64]:
+    """`h_camera` for an explicitly posed box — landmarks (decision 018)."""
+    return _bbox_of(_to_camera(box_corners(center, extent, yaw), cam), cam)
 
 
 def in_view(x: NDArray[np.float64], cam: CameraModel) -> bool:
@@ -116,14 +146,14 @@ def in_view(x: NDArray[np.float64], cam: CameraModel) -> bool:
     target being farther away. Either would hand the filter a measurement its
     model cannot explain, so the harness emits no detection instead.
     """
-    corners_c = _corners_camera(x, cam)
-    z = corners_c[:, 2]
-    if bool(np.any(z <= _Z_EPS)):
-        return False
-    u, v = _project(corners_c, z, cam)
-    return bool(
-        u.min() >= 0.0 and u.max() <= cam.width and v.min() >= 0.0 and v.max() <= cam.height
-    )
+    return _visible(_corners_camera(x, cam), cam)
+
+
+def in_view_box(
+    center: NDArray[np.float64], extent: NDArray[np.float64], yaw: float, cam: CameraModel
+) -> bool:
+    """`in_view` for an explicitly posed box."""
+    return _visible(_to_camera(box_corners(center, extent, yaw), cam), cam)
 
 
 def h_radar(

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal, Union
 
+import numpy as np
 from pydantic import BaseModel, Field, model_validator
 
 # chi-squared 95% thresholds by measurement DOF (gate = d^2 < chi2)
@@ -57,10 +58,26 @@ class UKFConfig(BaseModel):
         return self
 
 
+class CameraMount(BaseModel):
+    """Where a camera sits on its platform (decision 019): a body-frame offset
+    and a pitch below the platform's forward axis. Yaw 0 = looking along body x."""
+
+    offset: list[float] = [0.0, 0.0, 0.0]  # m, body frame (x fwd, y left, z up)
+    pitch_deg: float = 30.0  # positive = nose down
+    yaw_deg: float = 0.0
+
+
 class CameraConfig(BaseModel):
-    """A camera sensor: measures pixel bbox [u, v, w, h] (4-DOF)."""
+    """A camera sensor: measures pixel bbox [u, v, w, h] (4-DOF).
+
+    A camera either rides a platform (`platform` set: extrinsics come from that
+    drone's pose through `mount`, decision 017) or is posed per step by the
+    caller (`platform` None: the legacy chase-camera harness in the tests).
+    """
 
     sensor_type: Literal["camera"] = "camera"
+    platform: str | None = None  # drone_id carrying this camera
+    mount: CameraMount = CameraMount()
     # Measurement noise — diagonal of R (px^2 as std-devs listed): u, v, w, h.
     measurement_noise: list[float] = [2.0, 2.0, 3.0, 3.0]
     gate_threshold: float = CHI2_95[4]  # 4-DOF measurement
@@ -103,6 +120,38 @@ SensorConfig = Annotated[
     Union[CameraConfig, RadarConfig, LidarConfig],
     Field(discriminator="sensor_type"),
 ]
+
+
+class ImuConfig(BaseModel):
+    """IMU error model (decision 019), as CONTINUOUS-TIME densities so the same
+    numbers drive both the synthesiser and the filter's process noise at any
+    sample rate. Per-sample std-devs follow from the rate:
+        white noise:  sigma * sqrt(rate)      bias random walk:  sigma / sqrt(rate)
+    Defaults are consumer-MEMS order of magnitude, not a datasheet.
+    """
+
+    rate_hz: float = 100.0
+    accel_noise_density: float = 2e-3  # m/s^2 / sqrt(Hz)
+    gyro_noise_density: float = 2e-4  # rad/s / sqrt(Hz)
+    accel_bias_random_walk: float = 2e-4  # m/s^3 / sqrt(Hz)
+    gyro_bias_random_walk: float = 2e-5  # rad/s^2 / sqrt(Hz)
+    accel_bias_init_std: float = 0.05  # m/s^2 — turn-on bias spread
+    gyro_bias_init_std: float = 0.005  # rad/s
+    gravity: list[float] = [0.0, 0.0, -9.81]  # world frame (z up)
+
+    @property
+    def dt(self) -> float:
+        return 1.0 / self.rate_hz
+
+    def per_sample(self) -> dict[str, float]:
+        """Discrete std-devs at `rate_hz`."""
+        r = np.sqrt(self.rate_hz)
+        return {
+            "accel_noise": self.accel_noise_density * r,
+            "gyro_noise": self.gyro_noise_density * r,
+            "accel_bias_walk": self.accel_bias_random_walk / r,
+            "gyro_bias_walk": self.gyro_bias_random_walk / r,
+        }
 
 
 class JPDAConfig(BaseModel):

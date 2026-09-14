@@ -19,6 +19,10 @@ class Detection:
     measurement: NDArray[np.float64]  # shape depends on sensor type
     class_label: str | None = None
     class_confidence: float = 0.0
+    # Detector-reported attributes beyond class: {"color": "red"} on a vehicle,
+    # {"sign_type": "stop"} on a sign (decision 018). Free-form strings so a
+    # new attribute never needs a schema change here.
+    attributes: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
