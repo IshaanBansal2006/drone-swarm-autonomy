@@ -42,13 +42,15 @@ What now flows from this — what's easier, what's harder, what's ruled out.
 | 015 | DS conflict and decision rule | Accepted (conflict-weighted discounting + BetP) |
 | 016 | Joint data association (JPDA) | **Stopped at the pivot** — enumeration and Hungarian built and tested, never integrated |
 | 017 | Sensor placement | Accepted (camera on each drone, radar as a fixed ground station) |
-| 018 | SLAMMOT and landmarks | Accepted (prior-mapped road signs, estimated parked vehicles; sub-decisions open) |
+| 018 | SLAMMOT and landmarks | Accepted (prior-mapped road signs, estimated parked vehicles) |
+| 019 | Ego-pose estimation | Accepted (6-DoF error-state UKF, 30° forward-down camera, Schmidt–Kalman consider target filter, simulated IMU) |
 | 020 | Task decomposer | Accepted (HTN) |
 | 021 | Allocator | Accepted (CBBA) |
 | 022 | Coverage planner | Accepted (Voronoi) |
 | 023 | Learned CBBA path score | Accepted (localization-aware score; sub-decisions open) |
 | 030 | COP viewer and transport | Accepted (Rerun) |
-| 040 | Interface schemas | Accepted (pydantic cross-layer schemas) |
+| 040 | Interface schemas | Accepted (pydantic cross-layer schemas; amended by 041) |
+| 041 | Drone pose schema | Accepted (one DronePoseMsg for truth and estimate; 6×6 sqrt-cov factor) |
 | 050 | Reopen for capability extensions | Accepted (SLAMMOT, then a learned CBBA score, each under its own tag) |
 
 Numbers 002–006 and 031 were reserved during planning and never written. 002 (roadmap slot),

@@ -7,6 +7,8 @@ import numpy as np
 from swarm_autonomy.edge.filters import initial_state, make_filter, sqrt_cov_block
 from swarm_autonomy.edge.config import UKFConfig
 from swarm_autonomy.schemas import (
+    DronePoseFrame,
+    DronePoseMsg,
     EngagementProposal,
     StructuredIntent,
     TaskAssignment,
@@ -80,3 +82,20 @@ def test_sqrt_cov_is_a_factor_of_the_leading_block() -> None:
     # Widening is a pure slice: the same property must hold at 6x6.
     L6 = sqrt_cov_block(state, dim=6)
     assert np.allclose(L6 @ L6.T, P0[:6, :6])
+
+
+def test_drone_pose_frame_roundtrip_truth_and_estimate() -> None:
+    """041: one schema, covariance optional — truth has none, the estimate does."""
+    truth = DronePoseMsg(drone_id="d0", timestamp=1.0, position=[1, 2, 4],
+                         orientation=[1, 0, 0, 0])
+    L = np.linalg.cholesky(np.diag([0.04, 0.04, 0.09, 1e-4, 1e-4, 4e-4]))
+    est = DronePoseMsg(drone_id="d0", timestamp=1.0, position=[1.1, 2.0, 3.9],
+                       orientation=[0.99, 0, 0, 0.14], pose_sqrt_cov=L.ravel().tolist())
+    for frame in (DronePoseFrame(timestamp=1.0, poses=[truth]),
+                  DronePoseFrame(timestamp=1.0, poses=[est]),
+                  DronePoseFrame(timestamp=2.0)):
+        assert DronePoseFrame.model_validate_json(frame.model_dump_json()) == frame
+    assert truth.pose_sqrt_cov is None
+    # the leading 3x3 block of the 6x6 factor is the factor of the position block
+    L3 = np.asarray(est.pose_sqrt_cov).reshape(6, 6)[:3, :3]
+    assert np.allclose(L3 @ L3.T, (L @ L.T)[:3, :3])

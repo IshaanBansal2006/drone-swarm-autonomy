@@ -69,6 +69,30 @@ class TrackFrame(BaseModel):
     tracks: list[TrackMsg] = Field(default_factory=list)
 
 
+class DronePoseMsg(BaseModel):
+    """A platform pose (decision 041). TRUTH from L2's kinematics on
+    /drone_poses; L1's ESTIMATE on /drone_pose_estimates. Same shape, so every
+    consumer has one code path; the covariance is the only difference."""
+
+    drone_id: str
+    timestamp: float  # sim seconds
+    position: list[float]  # [x, y, z] m, world frame
+    orientation: list[float]  # unit quaternion [w, x, y, z], body -> world
+    # Lower-triangular Cholesky FACTOR of the 6x6 pose covariance, row-major,
+    # error order [dp (3), dtheta (3)] with dtheta a body-frame rotation vector
+    # applied on the right (q [+] dtheta = q (x) exp(dtheta)). None on the
+    # truth feed. As with TrackMsg.position_sqrt_cov, the leading 3x3 block is
+    # exactly the factor of the position covariance.
+    pose_sqrt_cov: list[float] | None = None
+
+
+class DronePoseFrame(BaseModel):
+    """One complete fleet pose picture at one instant (envelope, like TrackFrame)."""
+
+    timestamp: float
+    poses: list[DronePoseMsg] = Field(default_factory=list)
+
+
 class StructuredIntent(BaseModel):
     """Operator -> L2 (Step 1: structured, language-free; Step 3 parses NL into this)."""
 

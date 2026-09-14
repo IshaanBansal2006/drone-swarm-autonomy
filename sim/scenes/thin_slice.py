@@ -131,7 +131,9 @@ _latest_drone_poses = {}
 
 
 def _on_drone_poses(msg):
-    _latest_drone_poses.update(__import__("json").loads(msg.data))
+    # 041 DronePoseFrame: {"timestamp": t, "poses": [{"drone_id", "position", "orientation"}]}
+    for p in __import__("json").loads(msg.data)["poses"]:
+        _latest_drone_poses[p["drone_id"]] = (p["position"], p["orientation"])
 
 
 ros_node.create_subscription(String, "/drone_poses", _on_drone_poses, 10)
@@ -151,8 +153,8 @@ while simulation_app.is_running():
         # render the fleet at its latest commanded poses (L2 owns the dynamics)
         for did, prim in drone_prims.items():
             if did in _latest_drone_poses:
-                prim.set_world_poses(positions=[_latest_drone_poses[did]],
-                                     orientations=[[1.0, 0.0, 0.0, 0.0]])
+                pos_d, quat_d = _latest_drone_poses[did]
+                prim.set_world_poses(positions=[pos_d], orientations=[quat_d])  # [w,x,y,z]
         t += DT
     rclpy.spin_once(ros_node, timeout_sec=0.0)  # ingest /drone_poses
     simulation_app.update()
