@@ -3,7 +3,8 @@
 Subscribes the system's own feeds (ROS 2 stays the inter-layer truth; Rerun is
 a TAP, not a hop in the pipeline):
     /tracks        -> 3-D boxes sized by fused extent, labeled class(conf)
-    /drone_poses   -> fleet points + trail
+    /drone_poses   -> fleet points + heading arrows (truth, from L2)
+    /drone_pose_estimates -> L1's estimate: points + position-uncertainty ellipsoids
     /mission_status-> text panel
 
 Timeline is sim time (`payload["t"]`), so the Rerun scrubber replays the
@@ -16,12 +17,14 @@ from __future__ import annotations
 import argparse
 import json
 
+import numpy as np
 import rclpy
 import rerun as rr
 from rclpy.node import Node
 from std_msgs.msg import String
 
-from swarm_autonomy.schemas import TrackFrame
+from swarm_autonomy.edge import rotation
+from swarm_autonomy.schemas import DronePoseFrame, TrackFrame
 
 
 def _set_time(t: float) -> None:
@@ -34,6 +37,7 @@ class RerunBridge(Node):
         super().__init__("cop_rerun_bridge")
         self.create_subscription(String, "/tracks", self._on_tracks, 10)
         self.create_subscription(String, "/drone_poses", self._on_drones, 10)
+        self.create_subscription(String, "/drone_pose_estimates", self._on_estimates, 10)
         self.create_subscription(String, "/mission_status", self._on_status, 10)
         self._t = 0.0
         self.get_logger().info("COP bridge up — logging to Rerun")
@@ -58,10 +62,37 @@ class RerunBridge(Node):
 
     def _on_drones(self, msg: String) -> None:
         _set_time(self._t)
-        poses = json.loads(msg.data)
+        frame = DronePoseFrame.model_validate_json(msg.data)
+        positions = [p.position for p in frame.poses]
         rr.log("world/drones", rr.Points3D(
-            positions=list(poses.values()), radii=0.25,
-            labels=list(poses.keys()), colors=[[80, 160, 255]]))
+            positions=positions, radii=0.25,
+            labels=[p.drone_id for p in frame.poses], colors=[[80, 160, 255]]))
+        rr.log("world/drones/heading", rr.Arrows3D(
+            origins=positions,
+            vectors=[rotation.rotate(np.asarray(p.orientation), np.array([1.5, 0.0, 0.0])).tolist()
+                     for p in frame.poses],
+            colors=[[80, 160, 255]]))
+
+    def _on_estimates(self, msg: String) -> None:
+        """L1's belief about the fleet. The ellipsoid is 2-sigma per axis from
+        the MARGINAL position std-devs (diagonal of L L^T for the leading 3x3
+        block of the pose factor) — axis-aligned, so it under-draws correlated
+        error; enough to see uncertainty grow between sign sightings."""
+        _set_time(self._t)
+        frame = DronePoseFrame.model_validate_json(msg.data)
+        centers, half_sizes = [], []
+        for p in frame.poses:
+            if p.pose_sqrt_cov is None:
+                continue
+            L = np.asarray(p.pose_sqrt_cov).reshape(6, 6)[:3, :3]
+            centers.append(p.position)
+            half_sizes.append((2.0 * np.sqrt(np.diag(L @ L.T))).tolist())
+        rr.log("world/drone_estimates", rr.Points3D(
+            positions=[p.position for p in frame.poses], radii=0.15,
+            labels=[f"{p.drone_id}^" for p in frame.poses], colors=[[255, 220, 80]]))
+        if centers:
+            rr.log("world/drone_estimates/cov", rr.Ellipsoids3D(
+                centers=centers, half_sizes=half_sizes, colors=[[255, 220, 80, 60]]))
 
     def _on_status(self, msg: String) -> None:
         _set_time(self._t)

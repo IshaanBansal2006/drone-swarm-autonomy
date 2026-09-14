@@ -6,7 +6,8 @@ Wires the decided stack end-to-end as a ROS 2 node:
     /tracks (L1 confirmed tracks JSON)     [from edge/thin_slice_node.py]
         -> WorldState -> HTN decompose (020, Voronoi scan via 022)
         -> CBBA allocate (021) -> Executor ticks BTs on the KinematicBackend
-    /drone_poses (JSON id->pos)            [Isaac renders these prims]
+    /drone_poses (041 DronePoseFrame, truth) [Isaac renders these prims; L1 synthesises from them]
+    /drone_pose_estimates (041, from L1)     -> DroneState.pose_estimate
     /mission_status (JSON)                 [for the Rerun COP bridge]
     /engagement_proposals (040 JSON) <-> /engagement_decisions   [L4 gate]
 
@@ -40,18 +41,27 @@ from std_msgs.msg import String
 from swarm_autonomy.autonomy.allocator import CBBAAllocator
 from swarm_autonomy.autonomy.coverage import VoronoiCoverage
 from swarm_autonomy.autonomy.decomposer import HTNDecomposer, Task
-from swarm_autonomy.autonomy.executor import Executor, KinematicBackend
+from swarm_autonomy.autonomy.executor import Executor, SmoothBackend
 from swarm_autonomy.autonomy.world_state import DroneState, WorldState
-from swarm_autonomy.schemas import EngagementProposal, StructuredIntent, TrackFrame
+from swarm_autonomy.edge import rotation
+from swarm_autonomy.scene import demo_scene
+from swarm_autonomy.schemas import (
+    DronePoseFrame,
+    DronePoseMsg,
+    EngagementProposal,
+    StructuredIntent,
+    TrackFrame,
+)
 
 TICK_DT = 0.1  # control cycle (s)
 ENGAGE_RANGE = 3.0  # m — follower proximity that triggers a proposal
 
-FLEET = [  # Step-1 fleet definition (config-file promotion is future work)
-    DroneState(drone_id="d0", position=[-5.0, -5.0, 2.0],
-               capabilities=frozenset({"camera", "radar"})),
-    DroneState(drone_id="d1", position=[5.0, -5.0, 2.0],
-               capabilities=frozenset({"camera"})),
+SCENE = demo_scene()
+FLEET = [  # start poses come from the shared scene (decision 019)
+    DroneState(drone_id=did, position=list(start.position),
+               orientation=rotation.from_yaw(start.yaw).tolist(),
+               capabilities=frozenset({"camera"}))
+    for did, start in SCENE.fleet.items()
 ]
 
 
@@ -63,7 +73,7 @@ class MissionNode(Node):
             self.world.update_drone(d)
         self.decomposer = HTNDecomposer(coverage=VoronoiCoverage())
         self.allocator = CBBAAllocator()
-        self.backend = KinematicBackend(self.world)
+        self.backend = SmoothBackend(self.world)
         self.task_executor = Executor(self.backend, self.world)
 
         self.intents: dict[str, StructuredIntent] = {}
@@ -75,6 +85,7 @@ class MissionNode(Node):
         self.create_subscription(String, "/intent", self._on_intent, 10)
         self.create_subscription(String, "/tracks", self._on_tracks, 10)
         self.create_subscription(String, "/engagement_decisions", self._on_decision, 10)
+        self.create_subscription(String, "/drone_pose_estimates", self._on_pose_estimates, 10)
         self.pub_poses = self.create_publisher(String, "/drone_poses", 10)
         self.pub_status = self.create_publisher(String, "/mission_status", 10)
         self.pub_proposals = self.create_publisher(String, "/engagement_proposals", 10)
@@ -93,6 +104,15 @@ class MissionNode(Node):
         # field mismatch now fails HERE, loudly, at the boundary.
         frame = TrackFrame.model_validate_json(msg.data)
         self.world.update_tracks(frame.tracks, frame.timestamp)
+
+    def _on_pose_estimates(self, msg: String) -> None:
+        frame = DronePoseFrame.model_validate_json(msg.data)
+        unknown = {p.drone_id for p in frame.poses} - set(self.world.drones)
+        if unknown:
+            self.get_logger().warning(
+                f"pose estimates for unknown drones {sorted(unknown)} ignored — "
+                f"L1 and L2 fleet definitions disagree")
+        self.world.update_pose_estimates(frame)
 
     def _on_decision(self, msg: String) -> None:
         d = json.loads(msg.data)
@@ -127,8 +147,11 @@ class MissionNode(Node):
         if len(self.task_executor.failed) > before_failed:
             self._replan("task failure (track lost?)")
         self._maybe_propose()
-        self.pub_poses.publish(String(data=json.dumps(
-            {d.drone_id: d.position for d in self.world.drones.values()})))
+        t = self.get_clock().now().nanoseconds * 1e-9
+        self.pub_poses.publish(String(data=DronePoseFrame(timestamp=t, poses=[
+            DronePoseMsg(drone_id=d.drone_id, timestamp=t, position=list(d.position),
+                         orientation=list(d.orientation))
+            for d in self.world.drones.values()]).model_dump_json()))
         self.pub_status.publish(String(data=json.dumps({
             "intents": list(self.intents),
             "pending_tasks": len(self.tasks) - len(self.task_executor.completed),

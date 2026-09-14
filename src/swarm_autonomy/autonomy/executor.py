@@ -23,12 +23,15 @@ import numpy as np
 
 from swarm_autonomy.autonomy.bt import Action, Node, Sequence, Status
 from swarm_autonomy.autonomy.decomposer import Task
-from swarm_autonomy.autonomy.world_state import WorldState
+from swarm_autonomy.autonomy.world_state import DroneState, WorldState
+from swarm_autonomy.edge import rotation
 
 log = logging.getLogger(__name__)
 
 ARRIVE_TOL = 0.3  # m — waypoint arrival radius
 FOLLOW_STANDOFF = 2.0  # m above target a follower holds
+MIN_APPROACH_SPEED = 0.5  # m/s — SmoothBackend never brakes below this short of a waypoint
+HEADING_SPEED_EPS = 0.05  # m/s — below this planar speed the heading is held, not updated
 
 
 class DroneBackend(Protocol):
@@ -70,6 +73,75 @@ class KinematicBackend:
                 vel = delta / dist * drone.speed
                 drone.position = (pos + vel * dt).tolist()
                 drone.velocity = vel.tolist()
+
+
+class SmoothBackend:
+    """Acceleration- and yaw-rate-limited point-mass motion (decision 019).
+
+    Same `DroneBackend` contract as `KinematicBackend`, two differences that
+    matter once an IMU is synthesised from the trajectory: velocity changes are
+    bounded by `max_accel`, so finite-difference accelerations are finite at
+    waypoints; and the platform has an attitude — level, heading along its
+    velocity, turning no faster than `max_yaw_rate` — written to
+    `DroneState.orientation` so a body-mounted camera has a direction.
+
+    Approach speed is capped at sqrt(2 a d) (the braking distance for the
+    remaining distance d) so the drone decelerates into the waypoint rather
+    than overshooting it, with a floor so it never stalls short of ARRIVE_TOL.
+    """
+
+    def __init__(self, world: WorldState, max_accel: float = 2.0,
+                 max_yaw_rate: float = 1.5) -> None:
+        self.world = world
+        self.max_accel = max_accel
+        self.max_yaw_rate = max_yaw_rate
+        self._targets: dict[str, np.ndarray] = {}
+        self._yaw: dict[str, float] = {}
+
+    def goto(self, drone_id: str, waypoint: np.ndarray) -> None:
+        self._targets[drone_id] = np.asarray(waypoint, dtype=float)
+
+    def pose(self, drone_id: str) -> np.ndarray:
+        return np.asarray(self.world.drones[drone_id].position, dtype=float)
+
+    def step(self, dt: float) -> None:
+        for drone_id, drone in self.world.drones.items():
+            pos = np.asarray(drone.position, dtype=float)
+            vel = np.asarray(drone.velocity, dtype=float)
+            target = self._targets.get(drone_id)
+            if target is None:
+                v_des = np.zeros(3)
+            else:
+                delta = target - pos
+                dist = float(np.linalg.norm(delta))
+                if dist < 1e-9:
+                    v_des = np.zeros(3)
+                else:
+                    approach = max(np.sqrt(2.0 * self.max_accel * dist), MIN_APPROACH_SPEED)
+                    v_des = delta / dist * min(drone.speed, approach)
+            dv = v_des - vel
+            dv_max = self.max_accel * dt
+            if float(np.linalg.norm(dv)) > dv_max:
+                dv *= dv_max / float(np.linalg.norm(dv))
+            vel = vel + dv
+            step = vel * dt
+            if target is not None and float(np.linalg.norm(step)) >= float(np.linalg.norm(target - pos)):
+                pos, vel = target.copy(), np.zeros(3)  # arrive: snap, stop
+            else:
+                pos = pos + step
+            drone.position = pos.tolist()
+            drone.velocity = vel.tolist()
+            drone.orientation = rotation.from_yaw(self._turn(drone_id, drone, vel, dt)).tolist()
+
+    def _turn(self, drone_id: str, drone: DroneState, vel: np.ndarray, dt: float) -> float:
+        yaw = self._yaw.get(drone_id)
+        if yaw is None:
+            yaw = rotation.yaw_of(np.asarray(drone.orientation, dtype=float))
+        if float(np.hypot(vel[0], vel[1])) > HEADING_SPEED_EPS:
+            err = float(rotation.wrap_angle(np.arctan2(vel[1], vel[0]) - yaw))
+            yaw += float(np.clip(err, -self.max_yaw_rate * dt, self.max_yaw_rate * dt))
+        self._yaw[drone_id] = float(rotation.wrap_angle(yaw))
+        return self._yaw[drone_id]
 
 
 # ---------------------------------------------------------------- tree factory

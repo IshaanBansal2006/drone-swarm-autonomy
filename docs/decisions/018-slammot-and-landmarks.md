@@ -1,6 +1,6 @@
 # 018 — SLAMMOT: prior-mapped road signs, estimated vehicle landmarks
 
-**Status:** Accepted — open sub-decisions listed under Consequences
+**Status:** Accepted — the sub-decisions listed under Consequences are resolved in `019`
 **Date:** 2026-09-13
 
 ## Context
