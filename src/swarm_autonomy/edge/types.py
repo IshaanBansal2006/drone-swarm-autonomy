@@ -53,3 +53,9 @@ class Track:
     age: int = 0  # number of update cycles since initiation
     misses: int = 0  # consecutive update cycles with no associated detection
     source_sensor_ids: list[str] = field(default_factory=list)
+    # Schmidt-Kalman consider blocks (decision 019): per observing drone, the
+    # 9x6 cross-covariance between this track's state and that drone's pose
+    # error [dp, dtheta]. Carried, never used to update the pose; it is what
+    # stops repeated looks from one uncertain camera being counted as
+    # independent evidence. Created on first sighting from that drone.
+    consider_xc: dict[str, NDArray[np.float64]] = field(default_factory=dict)
