@@ -50,6 +50,12 @@ log = logging.getLogger(__name__)
 BIRTH_MAX_SPEED = 15.0  # m/s — max plausible target speed for two-point pairing
 
 
+def _cov(state) -> np.ndarray:
+    """P of either state carrier (S S^T for the square-root filter)."""
+    S = getattr(state, "S", None)
+    return np.asarray(S @ S.T) if S is not None else np.asarray(state.P)
+
+
 class MultiTargetTracker:
     def __init__(self, config: TrackerConfig) -> None:
         self.cfg = config
@@ -87,6 +93,26 @@ class MultiTargetTracker:
             pos = np.asarray(sensor.position or [0.0, 0.0, 0.0])
             return lambda x: h_radar(x, pos)
         raise ValueError(f"unsupported sensor type: {sensor.sensor_type}")
+
+    @staticmethod
+    def _transport_consider(track: Track, P_before: np.ndarray, skip: str | None = None) -> None:
+        """Carry every consider cross-covariance through an update of x.
+
+        P_xc is a covariance BETWEEN x and a drone's pose error; when x is
+        corrected by any sensor — the radar, or another drone's camera — the
+        correction (I - K H) applies to it too: P_xc+ = (I - K H) P_xc. The
+        UT never forms H, but (I - K H) = P_after P_before^-1 exactly in the
+        linear-Gaussian case, so the transport needs only the covariances the
+        filter already produced. Skipping it leaves the joint
+        [[P_xx, P_xc], [P_xc', P_cc]] indefinite within a few radar updates —
+        found the hard way (126 factorisation repairs in an 8 s run).
+        """
+        if not track.consider_xc:
+            return
+        T = np.linalg.solve(P_before.T, _cov(track.state).T).T  # P_after @ inv(P_before)
+        for did in track.consider_xc:
+            if did != skip:
+                track.consider_xc[did] = T @ track.consider_xc[did]
 
     @staticmethod
     def _radar_to_position(sensor_pos: np.ndarray, z: np.ndarray) -> np.ndarray:
@@ -144,14 +170,17 @@ class MultiTargetTracker:
                 gated = [dets[i] for i in gated_idx]
                 betas = self.jpda.compute_association_probabilities(gated, z_pred, S)
                 combined = self.jpda.compute_combined_innovation(gated, betas, z_pred)
+                P_before = _cov(track.state)
                 if consider is not None:
                     track.state, P_xc_new, _, _ = consider.update(
                         track.state, P_xc, z_pred + combined)
                     track.consider_xc[mounted.pose.drone_id] = P_xc_new
                     self.consider_repairs += consider.repairs
                     consider.repairs = 0
+                    self._transport_consider(track, P_before, skip=mounted.pose.drone_id)
                 else:
                     track.state, _, _ = self.filter.update(track.state, z_pred + combined, h, R)
+                    self._transport_consider(track, P_before)
                 # only count a real association (not null-dominated) as a hit
                 if betas[1:].sum() > betas[0]:
                     associated_tracks.add(track.track_id)
@@ -210,8 +239,9 @@ class MultiTargetTracker:
                 vel = (pos - prev_pos) / dt
                 if np.linalg.norm(vel) > BIRTH_MAX_SPEED:
                     continue
-                x0 = np.concatenate([pos, vel, [0.5, 0.5, 0.5]])  # extent prior
-                P0 = np.diag([0.25] * 3 + [1.0] * 3 + [0.25] * 3)
+                x0 = np.concatenate([pos, vel, self.cfg.birth_extent])  # extent prior
+                P0 = np.diag([0.25] * 3 + [1.0] * 3
+                             + list(np.square(np.asarray(self.cfg.birth_extent_std))))
                 self.tracks.append(
                     Track(track_id=self._new_track_id(),
                           state=initial_state(self.filter, x0, P0), age=1)

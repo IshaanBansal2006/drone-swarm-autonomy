@@ -219,6 +219,15 @@ class TrackerConfig(BaseModel):
         "radar_gs": RadarConfig(position=[0.0, 0.0, 0.0]),
     }
 
+    # Birth prior on the 3-D extent (decision 013): what a new track is assumed
+    # to be before any camera has sized it. The default is the small-cube
+    # target of the original thin slice; the road scene (018) overrides it with
+    # a vehicle-class prior, because a 0.5 m prior against a 4.5 m car puts the
+    # first camera bbox ~100 px outside the chi^2 gate and the camera never
+    # associates at all.
+    birth_extent: list[float] = [0.5, 0.5, 0.5]
+    birth_extent_std: list[float] = [0.5, 0.5, 0.5]
+
     # Track management (M-of-N confirmation per decision 011)
     confirm_hits: int = 3  # M hits ...
     confirm_window: int = 5  # ... in N scans to confirm

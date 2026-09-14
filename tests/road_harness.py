@@ -35,7 +35,9 @@ class Frame:
 def road_tracker_config(drone_ids: list[str], scene: Scene) -> TrackerConfig:
     sensors: dict = {f"cam_{d}": CameraConfig(platform=d) for d in drone_ids}
     sensors["radar_gs"] = RadarConfig(position=list(scene.radar_position))
-    return TrackerConfig(sensors=sensors)
+    # vehicle-class birth prior: the only target in this scene is a car
+    return TrackerConfig(sensors=sensors, birth_extent=[4.5, 1.85, 1.7],
+                         birth_extent_std=[1.0, 0.4, 0.5])
 
 
 class RoadFlight:

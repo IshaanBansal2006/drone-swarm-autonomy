@@ -92,11 +92,12 @@ def _with_cov(state: TrackState | SRTrackState, x: NDArray[np.float64],
     P = 0.5 * (P + P.T)
     if isinstance(state, SRTrackState):
         try:
-            return SRTrackState(x=x, S=np.linalg.cholesky(P)), False
+            return SRTrackState(x=x, S=np.asarray(np.linalg.cholesky(P), dtype=float)), False
         except np.linalg.LinAlgError:
             w, V = np.linalg.eigh(P)
             floor = 1e-12 * max(float(w[-1]), 1.0)
-            return SRTrackState(x=x, S=np.linalg.cholesky((V * np.clip(w, floor, None)) @ V.T)), True
+            S_rep = np.asarray(np.linalg.cholesky((V * np.clip(w, floor, None)) @ V.T), dtype=float)
+            return SRTrackState(x=x, S=S_rep), True
     return TrackState(x=x, P=P), False
 
 
