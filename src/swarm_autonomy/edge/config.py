@@ -154,6 +154,42 @@ class ImuConfig(BaseModel):
         }
 
 
+class EgoConfig(BaseModel):
+    """Ego-pose filter (decision 019): error-state UKF over
+    [dp, dv, dtheta, d_accel_bias, d_gyro_bias] + 7 per vehicle landmark."""
+
+    imu: ImuConfig = ImuConfig()
+    alpha: float = 1.0  # as UKFConfig: alpha=1, kappa=1 -> every sigma weight positive
+    beta: float = 2.0
+    kappa: float = 1.0
+
+    # Initial uncertainty (std-devs): the drone knows roughly where it took off
+    init_position_std: float = 0.5  # m
+    init_velocity_std: float = 0.2  # m/s
+    init_attitude_std: float = 0.05  # rad
+    # bias init stds come from ImuConfig (the turn-on spread IS the prior)
+
+    # Sign updates against the prior map
+    sign_gate: float = CHI2_95[4]
+    map_position_std: float = 0.0  # m — prior-map error, folded into R as pixel noise
+
+    # Vehicle landmarks: delayed initialisation by two-view triangulation
+    landmark_gate: float = CHI2_95[4]
+    parallax_min_deg: float = 3.0  # rays must differ by this much before triangulating
+    candidate_min_obs: int = 3
+    candidate_min_span_s: float = 1.0  # first-to-last sighting: motion needs time to show
+    candidate_max_residual_px: float = 12.0  # static-consistency check on the candidate
+    candidate_max_age_s: float = 5.0  # forget a candidate not seen for this long
+    vehicle_z_range: list[float] = [0.2, 2.5]  # m — a parked vehicle's centre is near the ground
+    duplicate_radius: float = 3.0  # m — a same-colour landmark this close is the same vehicle
+    young_landmark_hits: int = 5  # below this, associate on bbox centre only (extent still a prior)
+    landmark_probation_misses: int = 20  # predicted fully in view but unmatched -> drop
+    vehicle_extent_prior: list[float] = [4.5, 1.85, 1.7]  # m, [L, W, H]
+    vehicle_extent_prior_std: list[float] = [0.8, 0.25, 0.4]
+    vehicle_yaw_prior_std: float = 0.8  # rad — heading of a parked car is a guess
+    bearing_noise_px: float = 2.0  # pixel std used to size a triangulated landmark's cov
+
+
 class JPDAConfig(BaseModel):
     """JPDA association parameters.
 
